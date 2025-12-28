@@ -7,9 +7,10 @@ public static class TipsRenderer
     public static void Show()
     {
         AnsiConsole.MarkupLine("[grey]Tips for getting started:[/]");
-        AnsiConsole.MarkupLine("[grey]1. Use 'sharky parse <file>' to parse logs[/]");
-        AnsiConsole.MarkupLine("[grey]2. Use 'sharky analyze <file>' to check health[/]");
-        AnsiConsole.MarkupLine("[grey]3. /help for more information.[/]");
+        AnsiConsole.MarkupLine("[grey]1. parse <file> - parse logs[/]");
+        AnsiConsole.MarkupLine("[grey]2. analyze <file> - check health[/]");
+        AnsiConsole.MarkupLine("[grey]3. /help - show all commands[/]");
+        AnsiConsole.MarkupLine("[grey]4. exit - quit[/]");
         AnsiConsole.WriteLine();
     }
 }
