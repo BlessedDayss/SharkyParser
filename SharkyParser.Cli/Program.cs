@@ -1,39 +1,15 @@
-﻿using SharkyParser.Core;
+﻿using SharkyParser.Cli.Infrastructure;
+using SharkyParser.Cli.UI;
+using Spectre.Console.Cli;
 
-if (args.Length == 0)
-{
-    Console.WriteLine("Usage:");
-    Console.WriteLine("  sharkylog parse <path-to-log-file>");
-    return;
-}
+// Show startup animation
+SpinnerLoader.ShowStartup();
 
-var command = args[0];
+// Show banner and tips
+BannerRenderer.Show();
+TipsRenderer.Show();
 
-if (command == "parse")
-{
-    if (args.Length < 2)
-    {
-        Console.WriteLine("Please specify log file path");
-        return;
-    }
-
-    var path = args[1];
-
-    if (!File.Exists(path))
-    {
-        Console.WriteLine($"File not found: {path}");
-        return;
-    }
-
-    var parser = new LogParser();
-    var logs = parser.ParseFile(path);
-
-    foreach (var log in logs)
-    {
-        Console.WriteLine($"{log.Timestamp} | {log.Level} | {log.Source} | {log.Message}");
-    }
-}
-else
-{
-    Console.WriteLine($"Unknown command: {command}");
-}
+// Run CLI application
+var app = new CommandApp();
+app.Configure(Startup.Configure);
+return app.Run(args);
