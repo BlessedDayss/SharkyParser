@@ -4,7 +4,7 @@ namespace TestProject1SharkyParser.Tests;
 public class ParserTests
 {
     [Fact]
-    public void ParseLine_ShouldParseBasicCreatioLog()
+    public void ParseLine_ShouldParseBasicAppLog()
     {
         var parser = new LogParser();
 

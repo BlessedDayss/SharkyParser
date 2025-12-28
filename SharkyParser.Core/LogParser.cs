@@ -6,8 +6,7 @@ public class LogParser
 {
     public LogEntry? ParseLine(string line)
     {
-        // Пример входа:
-        // 2025-01-01 12:45:33,421 INFO [App] Hello
+
 
         var parts = line.Split(' ', 5);
         if (parts.Length < 5)
