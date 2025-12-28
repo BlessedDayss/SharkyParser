@@ -2,9 +2,6 @@ using Spectre.Console;
 
 namespace SharkyParser.Cli.UI;
 
-/// <summary>
-/// Displays helpful tips for getting started with the CLI.
-/// </summary>
 public static class TipsRenderer
 {
     public static void Show()

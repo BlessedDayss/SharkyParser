@@ -1,21 +1,25 @@
+using Microsoft.Extensions.DependencyInjection;
 using SharkyParser.Cli.Commands;
+using SharkyParser.Core;
+using SharkyParser.Core.Interfaces;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Infrastructure;
 
-/// <summary>
-/// Configures the CLI application with commands.
-/// </summary>
 public static class Startup
 {
-    public static void Configure(IConfigurator config)
+    public static IServiceCollection ConfigureServices()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<ILogParser, LogParser>();
+        services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
+        return services;
+    }
+
+    public static void ConfigureCommands(IConfigurator config)
     {
         config.SetApplicationName("sharky");
-        
-        config.AddCommand<ParseCommand>("parse")
-            .WithDescription("Parse log files and display entries");
-        
-        config.AddCommand<AnalyzeCommand>("analyze")
-            .WithDescription("Analyze log files for errors and health issues");
+        config.AddCommand<ParseCommand>("parse");
+        config.AddCommand<AnalyzeCommand>("analyze");
     }
 }

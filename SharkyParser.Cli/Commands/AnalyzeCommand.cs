@@ -1,15 +1,21 @@
 using System.ComponentModel;
-using SharkyParser.Core;
+using SharkyParser.Core.Interfaces;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Commands;
 
-/// <summary>
-/// CLI wrapper for log analysis - displays results from Core.
-/// </summary>
 public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
 {
+    private readonly ILogParser _parser;
+    private readonly ILogAnalyzer _analyzer;
+
+    public AnalyzeCommand(ILogParser parser, ILogAnalyzer analyzer)
+    {
+        _parser = parser;
+        _analyzer = analyzer;
+    }
+
     public sealed class Settings : CommandSettings
     {
         [CommandArgument(0, "<path>")]
@@ -24,10 +30,9 @@ public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
             AnsiConsole.MarkupLine($"[red]File not found: {settings.Path}[/]");
             return 1;
         }
-        var parser = new LogParser();
-        var analyzer = new LogAnalyzer();
-        var logs = parser.ParseFile(settings.Path);
-        var stats = analyzer.GetStatistics(logs);
+
+        var logs = _parser.ParseFile(settings.Path);
+        var stats = _analyzer.GetStatistics(logs);
 
         AnsiConsole.MarkupLine($"[blue]Analyzing:[/] {settings.Path}");
         AnsiConsole.WriteLine();
@@ -50,10 +55,8 @@ public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
             AnsiConsole.MarkupLine("[green]✓ Health Status: HEALTHY[/]");
             return 0;
         }
-        else
-        {
-            AnsiConsole.MarkupLine("[red]⚠ Health Status: UNHEALTHY - Errors detected[/]");
-            return 1;
-        }
+
+        AnsiConsole.MarkupLine("[red]⚠ Health Status: UNHEALTHY - Errors detected[/]");
+        return 1;
     }
 }

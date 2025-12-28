@@ -1,15 +1,19 @@
 using System.ComponentModel;
-using SharkyParser.Core;
+using SharkyParser.Core.Interfaces;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Commands;
 
-/// <summary>
-/// CLI wrapper for log parsing - displays results from Core.
-/// </summary>
 public sealed class ParseCommand : Command<ParseCommand.Settings>
 {
+    private readonly ILogParser _parser;
+
+    public ParseCommand(ILogParser parser)
+    {
+        _parser = parser;
+    }
+
     public sealed class Settings : CommandSettings
     {
         [CommandArgument(0, "<path>")]
@@ -29,11 +33,8 @@ public sealed class ParseCommand : Command<ParseCommand.Settings>
             return 1;
         }
 
-        // Core does the logic
-        var parser = new LogParser();
-        var logs = parser.ParseFile(settings.Path).ToList();
+        var logs = _parser.ParseFile(settings.Path).ToList();
 
-        // CLI just displays
         if (settings.Json)
         {
             foreach (var log in logs)

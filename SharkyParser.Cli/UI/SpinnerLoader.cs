@@ -2,9 +2,6 @@ using Spectre.Console;
 
 namespace SharkyParser.Cli.UI;
 
-/// <summary>
-/// Displays loading spinner animation during startup.
-/// </summary>
 public static class SpinnerLoader
 {
     public static void ShowStartup()
@@ -12,9 +9,9 @@ public static class SpinnerLoader
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Binary)
             .SpinnerStyle(Style.Parse("blue"))
-            .Start("[blue]Starting Sharky Parser...[/]", ctx =>
+            .Start("[blue]Starting Sharky Parser...[/]", _ =>
             {
-                Thread.Sleep(500);
+                Thread.Sleep(3000);
             });
     }
 }

@@ -1,10 +1,10 @@
 namespace SharkyParser.Core;
 
-public class LogEntry
+public record LogEntry
 {
-    public DateTime Timestamp { get; set; }
-    public string Level { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public string Source { get; set; } = string.Empty;
-    public string StackTrace { get; set; }
+    public DateTime Timestamp { get; init; }
+    public string Level { get; init; } = string.Empty;
+    public string Message { get; init; } = string.Empty;
+    public string Source { get; init; } = string.Empty;
+    public string StackTrace { get; init; } = string.Empty;
 }
