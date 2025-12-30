@@ -1,7 +1,7 @@
 using FluentAssertions;
 using SharkyParser.Core;
 
-namespace TestProject1SharkyParser.Tests;
+namespace SharkyParser.Tests;
 
 public class LogAnalyzerTests
 {

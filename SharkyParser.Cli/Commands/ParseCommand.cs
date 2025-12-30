@@ -48,7 +48,6 @@ public sealed class ParseCommand : Command<ParseCommand.Settings>
                 .Border(TableBorder.Rounded)
                 .AddColumn("[blue]Timestamp[/]")
                 .AddColumn("[blue]Level[/]")
-                .AddColumn("[blue]Source[/]")
                 .AddColumn("[blue]Message[/]");
 
             foreach (var log in logs)
@@ -64,8 +63,7 @@ public sealed class ParseCommand : Command<ParseCommand.Settings>
                 table.AddRow(
                     log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
                     $"[{levelColor}]{log.Level}[/]",
-                    log.Source,
-                    log.Message
+                    Markup.Escape(log.Message)
                 );
             }
 

@@ -1,7 +1,7 @@
 using FluentAssertions;
 using SharkyParser.Core;
 
-namespace TestProject1SharkyParser.Tests;
+namespace SharkyParser.Tests;
 
 public class LogParserTests
 {
@@ -53,8 +53,6 @@ public class LogParserTests
 
         result.Should().NotBeNull();
         result!.Source.Should().Be("MyService");
-        result.Source.Should().NotContain("[");
-        result.Source.Should().NotContain("]");
         result.Level.Should().Be("WARN");
     }
 
@@ -121,26 +119,21 @@ public class LogParserTests
         result.Should().NotBeNull();
         result!.Timestamp.Should().Be(new DateTime(2025, 1, 1, 12, 45, 33, 421));
     }
-}
-
-public class LogParserExtraTests
-{
-    private readonly LogParser _sut = new();
 
     [Fact]
     public void ParseLine_MessageIsWarning_DetectsAsWarn()
     {
         var result = _sut.ParseLine("11:30:40 WARNING");
-        
+
         result.Should().NotBeNull();
         result!.Level.Should().Be("WARN");
     }
-    
-    [Fact]  
+
+    [Fact]
     public void ParseLine_MessageIsError_DetectsAsError()
     {
         var result = _sut.ParseLine("12:30:40 ERROR");
-        
+
         result.Should().NotBeNull();
         result!.Level.Should().Be("ERROR");
     }
