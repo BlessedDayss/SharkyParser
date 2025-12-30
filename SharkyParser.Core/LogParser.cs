@@ -26,8 +26,10 @@ public partial class LogParser : ILogParser
             return null;
 
         var match = TimestampRegex.Match(line);
+        var isValidTimestampBoundary = match.Success && 
+            (match.Length == line.Length || char.IsWhiteSpace(line[match.Length]));
         
-        if (match.Success)
+        if (isValidTimestampBoundary)
         {
             var timestampText = match.Value;
             var messagePart = line[match.Length..].Trim();
@@ -72,8 +74,10 @@ public partial class LogParser : ILogParser
                 continue;
 
             var match = TimestampRegex.Match(line);
+            var isValidTimestampBoundary = match.Success && 
+                (match.Length == line.Length || char.IsWhiteSpace(line[match.Length]));
             
-            if (match.Success && TryParseTimestamp(match.Value, out var timestamp))
+            if (isValidTimestampBoundary && TryParseTimestamp(match.Value, out var timestamp))
             {
                 // If we have a previous entry, yield it
                 if (lastEntry != null)
@@ -98,14 +102,24 @@ public partial class LogParser : ILogParser
             }
             else
             {
-                // Line without timestamp - append as stack trace or create standalone entry
-                if (lastEntry != null)
+                var trimmedLine = line.TrimStart();
+                var isStackTrace = line.StartsWith(" ") || 
+                                   line.StartsWith("\t") || 
+                                   trimmedLine.StartsWith("at ") ||
+                                   trimmedLine.StartsWith("---") ||
+                                   trimmedLine.StartsWith("^");
+
+                if (lastEntry != null && isStackTrace)
                 {
                     AppendStackTrace(lastEntry, line);
                 }
                 else
                 {
-                    // Standalone line without timestamp
+                    if (lastEntry != null)
+                    {
+                        yield return lastEntry;
+                    }
+                    
                     var level = DetectLevel(line, line);
                     lastEntry = new LogEntry
                     {
@@ -159,25 +173,37 @@ public partial class LogParser : ILogParser
     private static string DetectLevel(string fullLine, string messagePart)
     {
         var lowerLine = fullLine.ToLowerInvariant();
+        var lowerMessage = messagePart.Trim().ToLowerInvariant();
         
-        // Check for false positives like "0 errors"
         if (IsZeroErrorOrWarningFalsePositive(lowerLine))
             return "INFO";
 
-        // Check for explicit level markers first
-        if (ContainsLevelMarker(lowerLine, "error") || ContainsLevelMarker(lowerLine, "err") || ContainsLevelMarker(lowerLine, "erro"))
+        if (lowerMessage is "error" or "err" or "erro" || 
+            ContainsLevelMarker(lowerLine, "error") || 
+            ContainsLevelMarker(lowerLine, "err") || 
+            ContainsLevelMarker(lowerLine, "erro"))
             return "ERROR";
-        if (ContainsLevelMarker(lowerLine, "fatal"))
+        
+        if (lowerMessage == "fatal" || ContainsLevelMarker(lowerLine, "fatal"))
             return "FATAL";
-        if (ContainsLevelMarker(lowerLine, "critical"))
+        
+        if (lowerMessage == "critical" || ContainsLevelMarker(lowerLine, "critical"))
             return "CRITICAL";
-        if (ContainsLevelMarker(lowerLine, "warn") || ContainsLevelMarker(lowerLine, "warning"))
+        
+        if (lowerMessage is "warn" or "warning" || 
+            ContainsLevelMarker(lowerLine, "warn") || 
+            ContainsLevelMarker(lowerLine, "warning"))
             return "WARN";
-        if (ContainsLevelMarker(lowerLine, "debug") || ContainsLevelMarker(lowerLine, "dbg"))
+        
+        if (lowerMessage is "debug" or "dbg" || 
+            ContainsLevelMarker(lowerLine, "debug") || 
+            ContainsLevelMarker(lowerLine, "dbg"))
             return "DEBUG";
-        if (ContainsLevelMarker(lowerLine, "trace"))
+        
+        if (lowerMessage == "trace" || ContainsLevelMarker(lowerLine, "trace"))
             return "TRACE";
-        if (ContainsLevelMarker(lowerLine, "info"))
+        
+        if (lowerMessage == "info" || ContainsLevelMarker(lowerLine, "info"))
             return "INFO";
 
         // Check for error keywords in content
@@ -205,12 +231,9 @@ public partial class LogParser : ILogParser
 
     private static bool IsZeroErrorOrWarningFalsePositive(string lowerLine)
     {
-        return lowerLine.Contains("0 error") ||
-               lowerLine.Contains("0 errors") ||
-               lowerLine.Contains("0 warning") ||
-               lowerLine.Contains("0 warnings") ||
-               lowerLine.Contains("no error") ||
-               lowerLine.Contains("no errors");
+        return Regex.IsMatch(lowerLine, @"\b0\s+errors?\b") ||
+               Regex.IsMatch(lowerLine, @"\b0\s+warnings?\b") ||
+               Regex.IsMatch(lowerLine, @"\bno\s+errors?\b");
     }
 
     private static string ExtractSource(ref string messagePart)
@@ -261,6 +284,6 @@ public partial class LogParser : ILogParser
 
     // Regex patterns for timestamp detection
     // Matches: 2025-12-30 14:30:45.123, 2025-12-30 14:30:45, 14:30:45, etc.
-    [GeneratedRegex(@"^(\d{4}[-/]\d{2}[-/]\d{2}\s+)?\d{1,2}:\d{2}:\d{2}([,.:]\d{1,3})?", RegexOptions.Compiled)]
+    [GeneratedRegex(@"^(\d{4}[-/]\d{2}[-/]\d{2}\s+)?(\d{1,2}):(\d{2}):(\d{2})([,.]\d{1,3})?(?=\s|$)", RegexOptions.Compiled)]
     private static partial Regex MyTimestampRegex();
 }
