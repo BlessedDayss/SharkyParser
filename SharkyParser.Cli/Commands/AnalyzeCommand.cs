@@ -46,9 +46,10 @@ public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
         table.AddRow("Errors", $"[red]{stats.ErrorCount}[/]");
         table.AddRow("Warnings", $"[yellow]{stats.WarningCount}[/]");
         table.AddRow("Info", $"[green]{stats.InfoCount}[/]");
-
-        AnsiConsole.Write(table);
+        table.AddRow("Debug/Trace", $"[grey]{stats.DebugCount}[/]");
         AnsiConsole.WriteLine();
+        AnsiConsole.Write(table);
+        
 
         if (stats.IsHealthy)
         {
