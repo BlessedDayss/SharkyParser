@@ -61,7 +61,7 @@ public sealed class ParseCommand : Command<ParseCommand.Settings>
                 };
 
                 table.AddRow(
-                    log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
+                    log.Timestamp.ToString("HH:mm:ss"),
                     $"[{levelColor}]{log.Level}[/]",
                     Markup.Escape(log.Message)
                 );

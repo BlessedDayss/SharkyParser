@@ -19,7 +19,9 @@ public static class Startup
     public static void ConfigureCommands(IConfigurator config)
     {
         config.SetApplicationName("sharky");
-        config.AddCommand<ParseCommand>("parse");
-        config.AddCommand<AnalyzeCommand>("analyze");
+        config.AddCommand<ParseCommand>("parse")
+            .WithDescription("Parse log file and display entries in table format");
+        config.AddCommand<AnalyzeCommand>("analyze")
+            .WithDescription("Analyze log file and show health statistics");
     }
 }
