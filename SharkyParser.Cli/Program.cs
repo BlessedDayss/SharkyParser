@@ -17,11 +17,11 @@ if (args.Length > 0)
     return app.Run(args);
 }
 
+var history = new CommandHistory();
+
 while (true)
 {
-    var input = AnsiConsole.Prompt(
-        new TextPrompt<string>("[aqua]>[/]")
-            .AllowEmpty());
+    var input = InputReader.ReadLineWithHistory(history, "> ");
 
     if (string.IsNullOrWhiteSpace(input))
         continue;
