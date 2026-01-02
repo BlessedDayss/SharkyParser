@@ -23,6 +23,10 @@ public sealed class ParseCommand : Command<ParseCommand.Settings>
         [CommandOption("--json")]
         [Description("Output in JSON format")]
         public bool Json { get; set; }
+
+        [CommandOption("-f|--filter")]
+        [Description("Filter by log level (error, warn, info, debug)")]
+        public string? Filter { get; set; }
     }
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -34,6 +38,19 @@ public sealed class ParseCommand : Command<ParseCommand.Settings>
         }
 
         var logs = _parser.ParseFile(settings.Path).ToList();
+
+        // Apply filter if specified
+        if (!string.IsNullOrWhiteSpace(settings.Filter))
+        {
+            var filterLevel = settings.Filter.ToUpperInvariant();
+            logs = logs.Where(l => l.Level.Equals(filterLevel, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (logs.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"[yellow]No logs found with level: {settings.Filter}[/]");
+                return 0;
+            }
+        }
 
         if (settings.Json)
         {
