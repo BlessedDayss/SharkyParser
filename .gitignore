@@ -1,3 +1,11 @@
+# Node / Electron
+node_modules/
+dist/
+SharkyParser.Ui/dotnet/
+SharkyParser.Ui/dotnet-win/
+SharkyParser.Ui/dotnet-linux/
+
+# C#
 bin/
 obj/
 publish/

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Log Parser</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-section">
+                <div class="logo-icon">📋</div>
+                <h1>Installation Log Parser</h1>
+                <span class="version-badge">v1.0</span>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggle" class="icon-btn" title="Toggle theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar with controls -->
+            <aside class="sidebar">
+                <div class="control-panel">
+                    <h3 class="panel-title">📁 File Operations</h3>
+                    <button id="loadFileBtn" class="primary-btn">
+                        <span class="btn-icon">📂</span>
+                        Load Log File
+                    </button>
+                    <div id="filePath" class="file-path">No file selected</div>
+                </div>
+
+                <div class="control-panel">
+                    <h3 class="panel-title">🔍 Filters</h3>
+                    <div class="filter-group">
+                        <label>Log Level</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="filterError" checked>
+                                <span class="level-badge error">ERROR</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="filterWarning" checked>
+                                <span class="level-badge warning">WARNING</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="filterInfo" checked>
+                                <span class="level-badge info">INFO</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="filterDebug" checked>
+                                <span class="level-badge debug">DEBUG</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label for="searchInput">Search</label>
+                        <input type="text" id="searchInput" placeholder="Search messages..." class="search-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="errorTypeFilter">Error Type</label>
+                        <select id="errorTypeFilter" class="select-input">
+                            <option value="">All Types</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Statistics Panel -->
+                <div class="control-panel stats-panel">
+                    <h3 class="panel-title">📊 Statistics</h3>
+                    <div id="statsContainer" class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-value" id="totalEntries">0</span>
+                            <span class="stat-label">Total</span>
+                        </div>
+                        <div class="stat-card error">
+                            <span class="stat-value" id="errorCount">0</span>
+                            <span class="stat-label">Errors</span>
+                        </div>
+                        <div class="stat-card warning">
+                            <span class="stat-value" id="warningCount">0</span>
+                            <span class="stat-label">Warnings</span>
+                        </div>
+                        <div class="stat-card info">
+                            <span class="stat-value" id="infoCount">0</span>
+                            <span class="stat-label">Info</span>
+                        </div>
+                    </div>
+                    <div id="errorTypesBreakdown" class="error-types-breakdown"></div>
+                </div>
+            </aside>
+
+            <!-- Log entries view -->
+            <section class="content-area">
+                <div class="content-header">
+                    <div class="status-bar">
+                        <span id="status" class="status-text">Ready to load file...</span>
+                        <span id="entryCount" class="entry-count"></span>
+                    </div>
+                    <div class="view-controls">
+                        <button id="viewTable" class="view-btn active" title="Table View">📋</button>
+                        <button id="viewCards" class="view-btn" title="Card View">🃏</button>
+                    </div>
+                </div>
+
+                <div id="results" class="results-container">
+                    <div class="empty-state">
+                        <div class="empty-icon">📄</div>
+                        <h3>No Log File Loaded</h3>
+                        <p>Click "Load Log File" to get started</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Entry Detail Modal -->
+    <div id="entryModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📝 Log Entry Details</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

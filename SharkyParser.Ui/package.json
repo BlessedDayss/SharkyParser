@@ -1,0 +1,69 @@
+{
+    "name": "log-parser",
+    "version": "1.0.1",
+    "description": "Cross-platform installation log parser with C# backend and Electron UI",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "NODE_ENV=development electron .",
+        "build:sharky": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r $(uname -m | sed 's/x86_64/osx-x64/;s/arm64/osx-arm64/') --self-contained true -p:PublishSingleFile=true -o ./dotnet",
+        "build:sharky:win": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet-win",
+        "build:sharky:linux": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet-linux",
+        "build": "npm run build:sharky && electron-builder",
+        "build:win": "npm run build:sharky:win && electron-builder --win",
+        "build:linux": "npm run build:sharky:linux && electron-builder --linux",
+        "build:mac": "npm run build:sharky && electron-builder --mac",
+        "version:patch": "npm version patch --no-git-tag-version",
+        "test": "cd .. && dotnet test"
+    },
+    "keywords": [
+        "log",
+        "parser",
+        "electron",
+        "csharp",
+        "standalone"
+    ],
+    "author": "BlessedDays",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^40.0.0",
+        "electron-builder": "^24.6.4"
+    },
+    "build": {
+        "appId": "com.logparser.app",
+        "productName": "LogParser",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!../**",
+            "!dotnet-win/**",
+            "!dotnet-linux/**",
+            "!node_modules/**/{README.md,CHANGELOG.md,README,readme.markdown,test,__tests__,tests,powered-test,example,examples,*.d.ts}",
+            "!node_modules/.bin",
+            "!**/*.map",
+            "!**/*.pdb"
+        ],
+        "extraResources": [
+            {
+                "from": "dotnet",
+                "to": "dotnet",
+                "filter": [
+                    "**/*",
+                    "!*.pdb"
+                ]
+            }
+        ],
+        "win": {
+            "target": "nsis"
+        },
+        "mac": {
+            "target": "dmg",
+            "identity": null
+        },
+        "linux": {
+            "target": "AppImage"
+        }
+    }
+}
