@@ -2,6 +2,10 @@
     "name": "log-parser",
     "version": "1.0.1",
     "description": "Cross-platform Sharky parser with C# backend and Electron UI",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/BlessedDayss/SharkyParser.git"
+    },
     "main": "main.js",
     "scripts": {
         "start": "electron .",
@@ -30,8 +34,8 @@
         "electron-builder": "^24.6.4"
     },
     "build": {
-        "appId": "com.logparser.app",
-        "productName": "LogParser",
+        "appId": "com.sharkyparser.app",
+        "productName": "SharkyParser",
         "directories": {
             "output": "dist"
         },
