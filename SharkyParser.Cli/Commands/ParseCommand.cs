@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text;
 using SharkyParser.Core.Interfaces;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -12,14 +13,9 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
         [CommandArgument(0, "<path>")]
         [Description("Path to the log file to parse")]
         public string Path { get; set; } = string.Empty;
-        
-        //TODO: Enable JSON output in future versions
-        // [CommandOption("--json")]
-        // [Description("Output in JSON format (for CLI usage)")]
-        // public bool Json { get; set; }
 
         [CommandOption("--embedded")]
-        [Description("Output optimized for embedded usage (default)")]
+        [Description("Output in pipe-delimited format for embedded use (fastest)")]
         public bool Embedded { get; set; }
 
         [CommandOption("-f|--filter")]
@@ -31,7 +27,10 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
     {
         if (!File.Exists(settings.Path))
         {
-            AnsiConsole.MarkupLine($"[red]File not found: {settings.Path}[/]");
+            if (settings.Embedded)
+                Console.WriteLine("ERROR|File not found");
+            else
+                AnsiConsole.MarkupLine($"[red]File not found: {settings.Path}[/]");
             return 1;
         }
 
@@ -43,51 +42,96 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
             var filterLevel = settings.Filter.ToUpperInvariant();
             logs = logs.Where(l => l.Level.Equals(filterLevel, StringComparison.OrdinalIgnoreCase)).ToList();
 
-            if (logs.Count == 0)
+            if (logs.Count == 0 && !settings.Embedded)
             {
                 AnsiConsole.MarkupLine($"[yellow]No logs found with level: {settings.Filter}[/]");
                 return 0;
             }
         }
 
+        // Embedded format (pipe-delimited) - fastest for IPC
         if (settings.Embedded)
         {
-            // Optimized output for embedded usage - direct field output
-            AnsiConsole.MarkupLine($"STATS|{logs.Count}|{logs.Count(l => l.Level == "ERROR")}|{logs.Count(l => l.Level == "WARN")}|{logs.Count(l => l.Level == "INFO")}|{logs.Count(l => l.Level == "DEBUG")}");
-
-            foreach (var log in logs)
-            {
-                // Format: ENTRY|timestamp|level|message|source|stackTrace|lineNumber|filePath|rawData
-                AnsiConsole.MarkupLine($"ENTRY|{log.Timestamp:o}|{log.Level}|{log.Message.Replace("|", "\\|")}|{log.Source}|{log.StackTrace?.Replace("|", "\\|")}|{log.LineNumber}|{log.FilePath}|{log.RawData?.Replace("|", "\\|")}");
-            }
+            OutputEmbeddedFormat(logs);
+            return 0;
         }
-        else
-        {
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .AddColumn("[blue]Timestamp[/]")
-                .AddColumn("[blue]Level[/]")
-                .AddColumn("[blue]Message[/]");
 
-            foreach (var log in logs)
-            {
-                var levelColor = log.Level switch
-                {
-                    "ERROR" => "red",
-                    "WARN" => "yellow",
-                    "INFO" => "green",
-                    _ => "grey"
-                };
-
-                table.AddRow(
-                    log.Timestamp.ToString("HH:mm:ss"),
-                    $"[{levelColor}]{log.Level}[/]",
-                    Markup.Escape(log.Message)
-                );
-            }
-
-            AnsiConsole.Write(table);
-        }
+        // Table format (default)
+        OutputTableFormat(logs);
         return 0;
+    }
+
+    private static void OutputEmbeddedFormat(List<SharkyParser.Core.LogEntry> logs)
+    {
+        // Statistics line first
+        var stats = new StringBuilder();
+        stats.Append("STATS|");
+        stats.Append(logs.Count);
+        stats.Append('|');
+        stats.Append(logs.Count(l => l.Level == "ERROR"));
+        stats.Append('|');
+        stats.Append(logs.Count(l => l.Level == "WARN"));
+        stats.Append('|');
+        stats.Append(logs.Count(l => l.Level == "INFO"));
+        stats.Append('|');
+        stats.Append(logs.Count(l => l.Level == "DEBUG"));
+        Console.WriteLine(stats.ToString());
+
+        // Entry lines
+        foreach (var log in logs)
+        {
+            var line = new StringBuilder();
+            line.Append("ENTRY|");
+            line.Append(log.Timestamp.ToString("o"));
+            line.Append('|');
+            line.Append(log.Level);
+            line.Append('|');
+            line.Append(EscapePipe(log.Message));
+            line.Append('|');
+            line.Append(EscapePipe(log.Source));
+            line.Append('|');
+            line.Append(EscapePipe(log.StackTrace));
+            line.Append('|');
+            line.Append(log.LineNumber);
+            line.Append('|');
+            line.Append(EscapePipe(log.FilePath));
+            line.Append('|');
+            line.Append(EscapePipe(log.RawData));
+            Console.WriteLine(line.ToString());
+        }
+    }
+
+    private static string EscapePipe(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        return value.Replace("|", "\\|").Replace("\n", "\\n").Replace("\r", "");
+    }
+
+    private static void OutputTableFormat(List<SharkyParser.Core.LogEntry> logs)
+    {
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .AddColumn("[blue]Timestamp[/]")
+            .AddColumn("[blue]Level[/]")
+            .AddColumn("[blue]Message[/]");
+
+        foreach (var log in logs)
+        {
+            var levelColor = log.Level switch
+            {
+                "ERROR" => "red",
+                "WARN" => "yellow",
+                "INFO" => "green",
+                _ => "grey"
+            };
+
+            table.AddRow(
+                log.Timestamp.ToString("HH:mm:ss"),
+                $"[{levelColor}]{log.Level}[/]",
+                Markup.Escape(log.Message)
+            );
+        }
+
+        AnsiConsole.Write(table);
     }
 }

@@ -13,3 +13,4 @@ publish/
 *.user
 *.suo
 .DS_Store
+Logs/
