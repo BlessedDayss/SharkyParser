@@ -3,9 +3,16 @@ using SharkyParser.Cli.UI;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-SpinnerLoader.ShowStartup();
-BannerRenderer.Show();
-TipsRenderer.Show();
+// Skip UI when --json or --embedded flag is present (for programmatic use)
+var isQuietMode = args.Any(a => a.Equals("--json", StringComparison.OrdinalIgnoreCase) || 
+                                 a.Equals("--embedded", StringComparison.OrdinalIgnoreCase));
+
+if (!isQuietMode)
+{
+    SpinnerLoader.ShowStartup();
+    BannerRenderer.Show();
+    TipsRenderer.Show();
+}
 
 var services = Startup.ConfigureServices();
 var registrar = new TypeRegistrar(services);

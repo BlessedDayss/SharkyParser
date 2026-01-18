@@ -1,0 +1,13 @@
+# Ensure all C# and UI files are counted in language statistics
+*.cs linguist-detectable=true
+*.js linguist-detectable=true
+*.html linguist-detectable=true
+*.css linguist-detectable=true
+
+# Ignore build artifacts and node_modules
+node_modules/* linguist-vendored
+dotnet/* linguist-vendored
+dist/* linguist-vendored
+publish/* linguist-vendored
+bin/* linguist-vendored
+obj/* linguist-vendored
