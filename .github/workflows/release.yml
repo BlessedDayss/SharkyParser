@@ -32,6 +32,15 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run Tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
