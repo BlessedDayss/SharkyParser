@@ -60,8 +60,17 @@ jobs:
       shell: bash
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
-        # Update .csproj
-        sed -i "s|<Version>.*</Version>|<Version>$VERSION</Version>|" SharkyParser.Cli/SharkyParser.Cli.csproj
+        echo "Updating to version: $VERSION"
+        
+        # Update .csproj using Node.js for cross-platform compatibility
+        node -e "
+          const fs = require('fs');
+          const path = 'SharkyParser.Cli/SharkyParser.Cli.csproj';
+          let content = fs.readFileSync(path, 'utf8');
+          content = content.replace(/<Version>.*<\/Version>/, '<Version>$VERSION<\/Version>');
+          fs.writeFileSync(path, content);
+        "
+        
         # Update package.json
         cd SharkyParser.Ui
         npm version $VERSION --no-git-tag-version
