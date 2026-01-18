@@ -1,54 +1,46 @@
-﻿using SharkyParser.Cli.Infrastructure;
-using SharkyParser.Cli.UI;
-using Spectre.Console;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SharkyParser.Cli.Infrastructure;
+using SharkyParser.Cli.PreCheck;
+using SharkyParser.Core;
+using SharkyParser.Core.Interfaces;
 using Spectre.Console.Cli;
 
-// Skip UI when --json or --embedded flag is present (for programmatic use)
-var isQuietMode = args.Any(a => a.Equals("--json", StringComparison.OrdinalIgnoreCase) || 
-                                 a.Equals("--embedded", StringComparison.OrdinalIgnoreCase));
+namespace SharkyParser.Cli;
 
-if (!isQuietMode)
+public static class Program
 {
-    SpinnerLoader.ShowStartup();
-    BannerRenderer.Show();
-    TipsRenderer.Show();
-}
-
-var services = Startup.ConfigureServices();
-var registrar = new TypeRegistrar(services);
-var app = new CommandApp(registrar);
-app.Configure(Startup.ConfigureCommands);
-
-if (args.Length > 0)
-{
-    return app.Run(args);
-}
-
-var history = new CommandHistory();
-
-while (true)
-{
-    var input = InputReader.ReadLineWithHistory(history, "> ");
-
-    if (string.IsNullOrWhiteSpace(input))
-        continue;
-
-    var command = input.Trim().ToLower();
-
-    if (command is "exit" or "quit" or "q")
+    public static int Main(string[] args)
     {
-        AnsiConsole.MarkupLine("[grey]Goodbye![/]");
-        break;
+        try
+        {
+            var services = ConfigureServices();
+            using var serviceProvider = services.BuildServiceProvider();
+            var registrar = new TypeRegistrar(services);
+            var commandApp = new CommandApp(registrar);
+            commandApp.Configure(Startup.ConfigureCommands);
+            var logger = serviceProvider.GetRequiredService<IAppLogger>();
+            var cliRunner = new CliModeRunner(commandApp, logger);
+            var interactiveRunner = new InteractiveModeRunner(commandApp, logger);
+            var embeddedRunner = new EmbeddedModeRunner(commandApp, logger);
+            var modeDetector = serviceProvider.GetRequiredService<ApplicationModeDetector>();
+            var runner = new ApplicationRunner(modeDetector, cliRunner, interactiveRunner, embeddedRunner, logger);
+            return runner.Run(args);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Fatal error: {ex.Message}");
+            return 1;
+        }
     }
-
-    if (command is "/help" or "help" or "?")
+    
+    private static IServiceCollection ConfigureServices()
     {
-        app.Run(new[] { "--help" });
-        continue;
+        var services = new ServiceCollection();
+        services.AddSingleton<ILogParser, LogParser>();
+        services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
+        services.AddSingleton<ApplicationModeDetector>();
+        services.AddSingleton<IAppLogger, AppFileLogger>(); 
+        services.AddSingleton<ApplicationRunner>();
+        return services;
     }
-
-    var commandArgs = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-    app.Run(commandArgs);
 }
-
-return 0;

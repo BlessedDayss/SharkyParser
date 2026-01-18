@@ -5,25 +5,16 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        
-        <!-- Tool Settings -->
-        <PackAsTool>true</PackAsTool>
-        <ToolCommandName>sharky</ToolCommandName>
-        <PackageId>SharkyParser</PackageId>
-        <PackageOutputPath>./nupkg</PackageOutputPath>
-        <Version>1.0.3</Version>
-        
-        <!-- NuGet Metadata -->
+
+        <!-- Framework-dependent publishing settings -->
+        <PublishTrimmed>false</PublishTrimmed>
+
+        <!-- Application metadata -->
+        <Version>1.0.4</Version>
         <Authors>BlessedDays</Authors>
-        <Description>A fast and flexible log parser and analyzer CLI tool.</Description>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/BlessedDays/SharkyParser</RepositoryUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Description>Self-contained log parser for Electron application</Description>
     </PropertyGroup>
 
-    <ItemGroup>
-      <None Include="..\README.md" Pack="true" PackagePath="\"/>
-    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\SharkyParser.Core\SharkyParser.Core.csproj" />

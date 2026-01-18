@@ -22,6 +22,6 @@ public static class Startup
         config.AddCommand<ParseCommand>("parse")
             .WithDescription("Parse log file and display entries in table format");
         config.AddCommand<AnalyzeCommand>("analyze")
-            .WithDescription("Analyze log file and show health statistics");
+            .WithDescription("Analyze log file and show status");
     }
 }

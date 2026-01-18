@@ -5,17 +5,8 @@ using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Commands;
 
-public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
+public sealed class AnalyzeCommand(ILogParser parser, ILogAnalyzer analyzer) : Command<AnalyzeCommand.Settings>
 {
-    private readonly ILogParser _parser;
-    private readonly ILogAnalyzer _analyzer;
-
-    public AnalyzeCommand(ILogParser parser, ILogAnalyzer analyzer)
-    {
-        _parser = parser;
-        _analyzer = analyzer;
-    }
-
     public sealed class Settings : CommandSettings
     {
         [CommandArgument(0, "<path>")]
@@ -31,8 +22,8 @@ public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
             return 1;
         }
 
-        var logs = _parser.ParseFile(settings.Path);
-        var stats = _analyzer.GetStatistics(logs);
+        var logs = parser.ParseFile(settings.Path);
+        var stats = analyzer.GetStatistics(logs);
 
         AnsiConsole.MarkupLine($"[blue]Analyzing:[/] {settings.Path}");
         AnsiConsole.WriteLine();
@@ -53,11 +44,11 @@ public sealed class AnalyzeCommand : Command<AnalyzeCommand.Settings>
 
         if (stats.IsHealthy)
         {
-            AnsiConsole.MarkupLine("[green]✓ Health Status: HEALTHY[/]");
+            AnsiConsole.MarkupLine("[green]✓ Status: All good![/]");
             return 0;
         }
 
-        AnsiConsole.MarkupLine("[red]⚠ Health Status: UNHEALTHY - Errors detected[/]");
+        AnsiConsole.MarkupLine("[red]⚠  Status: Errors detected![/]");
         return 1;
     }
 }
