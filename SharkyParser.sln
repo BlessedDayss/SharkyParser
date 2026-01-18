@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharkyParser.Core", "SharkyParser.Core\SharkyParser.Core.csproj", "{D82EC4B1-1602-47B8-A143-165069F894D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharkyParser.Cli", "SharkyParser.Cli\SharkyParser.Cli.csproj", "{8B89A3E3-96C4-44C6-AA6D-1A364E756C89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject1SharkyParser.Tests", "TestProject1SharkyParser.Tests\TestProject1SharkyParser.Tests.csproj", "{5CDD1999-F701-41ED-936D-598847BD054C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D82EC4B1-1602-47B8-A143-165069F894D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D82EC4B1-1602-47B8-A143-165069F894D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D82EC4B1-1602-47B8-A143-165069F894D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D82EC4B1-1602-47B8-A143-165069F894D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B89A3E3-96C4-44C6-AA6D-1A364E756C89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B89A3E3-96C4-44C6-AA6D-1A364E756C89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B89A3E3-96C4-44C6-AA6D-1A364E756C89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B89A3E3-96C4-44C6-AA6D-1A364E756C89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CDD1999-F701-41ED-936D-598847BD054C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CDD1999-F701-41ED-936D-598847BD054C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CDD1999-F701-41ED-936D-598847BD054C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CDD1999-F701-41ED-936D-598847BD054C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

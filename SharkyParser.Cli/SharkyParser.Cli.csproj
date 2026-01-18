@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        
+        <!-- Tool Settings -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>sharky</ToolCommandName>
+        <PackageId>SharkyParser</PackageId>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+        <Version>1.0.3</Version>
+        
+        <!-- NuGet Metadata -->
+        <Authors>BlessedDays</Authors>
+        <Description>A fast and flexible log parser and analyzer CLI tool.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/BlessedDays/SharkyParser</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SharkyParser.Core\SharkyParser.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+      <PackageReference Include="Spectre.Console" Version="0.54.1-alpha.0.10" />
+      <PackageReference Include="Spectre.Console.Cli" Version="1.0.0-alpha.0.12" />
+    </ItemGroup>
+
+</Project>
