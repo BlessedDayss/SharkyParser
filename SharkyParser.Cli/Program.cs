@@ -15,15 +15,8 @@ public static class Program
         {
             var services = ConfigureServices();
             using var serviceProvider = services.BuildServiceProvider();
-            var registrar = new TypeRegistrar(services);
-            var commandApp = new CommandApp(registrar);
-            commandApp.Configure(Startup.ConfigureCommands);
-            var logger = serviceProvider.GetRequiredService<IAppLogger>();
-            var cliRunner = new CliModeRunner(commandApp, logger);
-            var interactiveRunner = new InteractiveModeRunner(commandApp, logger);
-            var embeddedRunner = new EmbeddedModeRunner(commandApp, logger);
-            var modeDetector = serviceProvider.GetRequiredService<ApplicationModeDetector>();
-            var runner = new ApplicationRunner(modeDetector, cliRunner, interactiveRunner, embeddedRunner, logger);
+            
+            var runner = serviceProvider.GetRequiredService<ApplicationRunner>();
             return runner.Run(args);
         }
         catch (Exception ex)
@@ -36,11 +29,27 @@ public static class Program
     private static IServiceCollection ConfigureServices()
     {
         var services = new ServiceCollection();
+        
         services.AddSingleton<ILogParser, LogParser>();
         services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
-        services.AddSingleton<ApplicationModeDetector>();
+        
         services.AddSingleton<IAppLogger, AppFileLogger>(); 
+        services.AddSingleton<ApplicationModeDetector>();
+        
+        services.AddSingleton<ICliModeRunner, CliModeRunner>();
+        services.AddSingleton<IInteractiveModeRunner, InteractiveModeRunner>();
+        services.AddSingleton<IEmbeddedModeRunner, EmbeddedModeRunner>();
+        
         services.AddSingleton<ApplicationRunner>();
+        
+        services.AddSingleton<CommandApp>(_ => 
+        {
+            var registrar = new TypeRegistrar(services);
+            var app = new CommandApp(registrar);
+            app.Configure(Startup.ConfigureCommands);
+            return app;
+        });
+        
         return services;
     }
 }

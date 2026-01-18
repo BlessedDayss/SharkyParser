@@ -27,6 +27,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SharkyParser.Core\SharkyParser.Core.csproj" />
+      <ProjectReference Include="..\SharkyParser.Cli\SharkyParser.Cli.csproj" />
     </ItemGroup>
 
 </Project>

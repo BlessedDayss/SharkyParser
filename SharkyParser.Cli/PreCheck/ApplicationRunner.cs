@@ -5,20 +5,22 @@ namespace SharkyParser.Cli;
 
 public class ApplicationRunner(
     ApplicationModeDetector modeDetector,
-    CliModeRunner cliRunner,
-    InteractiveModeRunner interactiveRunner,
-    EmbeddedModeRunner embeddedRunner,IAppLogger logger)
+    ICliModeRunner cliRunner,
+    IInteractiveModeRunner interactiveRunner,
+    IEmbeddedModeRunner embeddedRunner,
+    IAppLogger logger)
 {
     private readonly ApplicationModeDetector _modeDetector = modeDetector;
-    private readonly CliModeRunner _cliRunner = cliRunner;
-    private readonly InteractiveModeRunner _interactiveRunner = interactiveRunner;
-    private readonly EmbeddedModeRunner _embeddedRunner = embeddedRunner;
+    private readonly ICliModeRunner _cliRunner = cliRunner;
+    private readonly IInteractiveModeRunner _interactiveRunner = interactiveRunner;
+    private readonly IEmbeddedModeRunner _embeddedRunner = embeddedRunner;
+    private readonly IAppLogger _logger = logger;
 
     public int Run(string[] args)
     {
-        logger.LogAppStart(args);
+        _logger.LogAppStart(args);
         var mode = _modeDetector.DetermineMode(args);
-        logger.LogModeDetected(mode.ToString());
+        _logger.LogModeDetected(mode.ToString());
         
         return mode switch
         {

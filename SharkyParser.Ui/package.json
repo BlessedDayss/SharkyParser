@@ -1,7 +1,7 @@
 {
     "name": "log-parser",
     "version": "1.0.1",
-    "description": "Cross-platform installation log parser with C# backend and Electron UI",
+    "description": "Cross-platform Sharky parser with C# backend and Electron UI",
     "main": "main.js",
     "scripts": {
         "start": "electron .",

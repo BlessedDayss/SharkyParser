@@ -3,13 +3,17 @@ using SharkyParser.Core.Interfaces;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace SharkyParser;
+namespace SharkyParser.Cli.PreCheck;
 
-public class InteractiveModeRunner(CommandApp app, IAppLogger logger)
+public interface IInteractiveModeRunner 
+{ 
+    int Run(); 
+}
+
+public class InteractiveModeRunner(CommandApp app, IAppLogger logger) : IInteractiveModeRunner
 {
     private readonly CommandApp _app = app;
     private readonly IAppLogger _logger = logger;
-
 
     public int Run()
     {
