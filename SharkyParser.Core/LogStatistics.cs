@@ -6,5 +6,6 @@ public record LogStatistics(
     int WarningCount,
     int InfoCount,
     int DebugCount,
-    bool IsHealthy
+    bool IsHealthy,
+    string ExtendedData = ""
 );

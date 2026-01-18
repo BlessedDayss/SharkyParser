@@ -12,18 +12,35 @@ public sealed class AnalyzeCommand(ILogParser parser, ILogAnalyzer analyzer) : C
         [CommandArgument(0, "<path>")]
         [Description("Path to the log file to analyze")]
         public string Path { get; set; } = string.Empty;
+
+        [CommandOption("--embedded")]
+        [Description("Output in structured format for embedded use")]
+        public bool Embedded { get; set; }
     }
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (!File.Exists(settings.Path))
         {
-            AnsiConsole.MarkupLine($"[red]File not found: {settings.Path}[/]");
+            if (settings.Embedded)
+            {
+                Console.WriteLine($"ERROR|File not found: {settings.Path}");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]File not found: {settings.Path}[/]");
+            }
             return 1;
         }
 
-        var logs = parser.ParseFile(settings.Path);
+        var logs = parser.ParseFile(settings.Path).ToList();
         var stats = analyzer.GetStatistics(logs);
+
+        if (settings.Embedded)
+        {
+            Console.WriteLine($"ANALYSIS|{stats.TotalCount}|{stats.ErrorCount}|{stats.WarningCount}|{stats.InfoCount}|{stats.DebugCount}|{(stats.IsHealthy ? "HEALTHY" : "UNHEALTHY")}|{stats.ExtendedData}");
+            return 0;
+        }
 
         AnsiConsole.MarkupLine($"[blue]Analyzing:[/] {settings.Path}");
         AnsiConsole.WriteLine();

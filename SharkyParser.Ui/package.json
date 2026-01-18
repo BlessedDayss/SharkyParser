@@ -2,22 +2,23 @@
     "name": "log-parser",
     "version": "1.0.1",
     "description": "Cross-platform Sharky parser with C# backend and Electron UI",
+    "type": "module",
+    "main": "out/main/index.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/BlessedDayss/SharkyParser.git"
     },
-    "main": "main.js",
     "scripts": {
-        "start": "electron .",
-        "dev": "NODE_ENV=development electron .",
+        "typecheck": "tsc --noEmit -p tsconfig.json --composite false",
+        "start": "electron-vite preview",
+        "dev": "electron-vite dev",
+        "build": "npm run build:sharky && electron-vite build && electron-builder",
+        "build:win": "npm run build:sharky:win && electron-vite build && electron-builder --win",
+        "build:linux": "npm run build:sharky:linux && electron-vite build && electron-builder --linux",
+        "build:mac": "npm run build:sharky && electron-vite build && electron-builder --mac",
         "build:sharky": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r $(uname -m | sed 's/x86_64/osx-x64/;s/arm64/osx-arm64/') --self-contained true -p:PublishSingleFile=true -o ./dotnet",
         "build:sharky:win": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet-win",
         "build:sharky:linux": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet-linux",
-        "build": "npm run build:sharky && electron-builder",
-        "build:win": "npm run build:sharky:win && electron-builder --win",
-        "build:linux": "npm run build:sharky:linux && electron-builder --linux",
-        "build:mac": "npm run build:sharky && electron-builder --mac",
-        "version:patch": "npm version patch --no-git-tag-version",
         "test": "cd .. && dotnet test"
     },
     "keywords": [
@@ -30,8 +31,15 @@
     "author": "BlessedDays",
     "license": "MIT",
     "devDependencies": {
+        "@electron-toolkit/preload": "^3.0.2",
+        "@electron-toolkit/tsconfig": "^2.0.0",
+        "@electron-toolkit/utils": "^4.0.0",
+        "@types/node": "^25.0.9",
         "electron": "^40.0.0",
-        "electron-builder": "^24.6.4"
+        "electron-builder": "^24.6.4",
+        "electron-vite": "^5.0.0",
+        "typescript": "^5.9.3",
+        "vite": "^6.4.1"
     },
     "build": {
         "appId": "com.sharkyparser.app",
