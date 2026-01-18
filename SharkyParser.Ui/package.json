@@ -68,6 +68,13 @@
         },
         "linux": {
             "target": "AppImage"
-        }
+        },
+        "publish": [
+            {
+                "provider": "github",
+                "owner": "BlessedDayss",
+                "repo": "SharkyParser"
+            }
+        ]
     }
 }
