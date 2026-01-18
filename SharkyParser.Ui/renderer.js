@@ -78,7 +78,7 @@ async function checkBackend() {
     if (!available) {
         statusEl.innerHTML = '⚠️ <a href="#" id="buildLink">Embedded SharkyParser not built. Click to build.</a>';
         document.getElementById('buildLink')?.addEventListener('click', () => {
-            require('electron').shell.openExternal('https://github.com/yourusername/SharkyParser#building');
+            require('electron').shell.openExternal('https://github.com/BlessedDayss/SharkyParser#building');
         });
     } else {
         statusEl.textContent = '✅ Embedded C# Backend (SharkyParser) ready';
