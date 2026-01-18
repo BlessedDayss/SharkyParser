@@ -1,0 +1,115 @@
+name: Release and Publish
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  release:
+    if: startsWith(github.event.head_commit.message, 'v')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: SharkyParser-linux
+            asset_name: SharkyParser-linux.AppImage
+          - os: windows-latest
+            artifact_name: SharkyParser-win
+            asset_name: SharkyParser-win.exe
+          - os: macos-latest
+            artifact_name: SharkyParser-mac
+            asset_name: SharkyParser-mac.dmg
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: SharkyParser.Ui/package-lock.json
+
+    - name: Extract Version
+      id: get_version
+      shell: bash
+      run: |
+        VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sed 's/v//')
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Detected version: $VERSION"
+
+    - name: Update Project Versions
+      shell: bash
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        # Update .csproj
+        sed -i "s|<Version>.*</Version>|<Version>$VERSION</Version>|" SharkyParser.Cli/SharkyParser.Cli.csproj
+        # Update package.json
+        cd SharkyParser.Ui
+        npm version $VERSION --no-git-tag-version
+
+    - name: Build and Pack NuGet (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        dotnet pack SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -o ./nupkg
+        dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
+
+    - name: Install Node dependencies
+      run: |
+        cd SharkyParser.Ui
+        npm install
+
+    - name: Build Electron App
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cd SharkyParser.Ui
+        npm run build:${{ matrix.os == 'windows-latest' && 'win' || (matrix.os == 'macos-latest' && 'mac' || 'linux') }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: |
+          SharkyParser.Ui/dist/*.exe
+          SharkyParser.Ui/dist/*.dmg
+          SharkyParser.Ui/dist/*.AppImage
+          SharkyParser.Ui/dist/*.zip
+
+  create_release:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract Version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          files: |
+            artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
