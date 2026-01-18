@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharkyParser.Core", "Sharky
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharkyParser.Cli", "SharkyParser.Cli\SharkyParser.Cli.csproj", "{8B89A3E3-96C4-44C6-AA6D-1A364E756C89}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject1SharkyParser.Tests", "TestProject1SharkyParser.Tests\TestProject1SharkyParser.Tests.csproj", "{5CDD1999-F701-41ED-936D-598847BD054C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharkyParser.Tests", "SharkyParser.Tests\SharkyParser.Tests.csproj", "{5CDD1999-F701-41ED-936D-598847BD054C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
