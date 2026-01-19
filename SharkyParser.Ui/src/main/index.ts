@@ -5,6 +5,9 @@ import { optimizer, is } from '@electron-toolkit/utils'
 import { spawn } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as https from 'https'
+import pkg from 'electron-updater'
+const { autoUpdater } = pkg
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -246,6 +249,9 @@ app.whenReady().then(async () => {
         })
     })
 
+    // Setup auto-update system
+    setupAutoUpdater()
+
     // Create main window (it will auto-show and close splash)
     mainWindow = createMainWindow()
 
@@ -263,14 +269,16 @@ app.on('window-all-closed', () => {
 function findSharky(): string {
     const isDev = !app.isPackaged
     const appPath = app.getAppPath()
+    const exeName = process.platform === 'win32' ? 'SharkyParser.Cli.exe' : 'SharkyParser.Cli'
+
     if (isDev) {
         const paths = [
-            path.join(appPath, 'dotnet', 'SharkyParser.Cli'),
-            path.join(appPath, '..', 'SharkyParser.Cli', 'bin', 'Debug', 'net8.0', 'SharkyParser.Cli')
+            path.join(appPath, 'dotnet', exeName),
+            path.join(appPath, '..', 'SharkyParser.Cli', 'bin', 'Debug', 'net8.0', exeName)
         ]
         for (const p of paths) if (fs.existsSync(p)) return p
     }
-    return path.join(process.resourcesPath, 'dotnet', 'SharkyParser.Cli')
+    return path.join(process.resourcesPath, 'dotnet', exeName)
 }
 
 function parseEmbeddedOutput(output: string) {
@@ -311,4 +319,204 @@ function parseEmbeddedOutput(output: string) {
         }
     }
     return { entries, statistics }
+}
+
+
+// Auto-Update System (like Cursor/VS Code)
+function setupAutoUpdater() {
+    // Configure auto-updater
+    autoUpdater.autoDownload = true
+    autoUpdater.autoInstallOnAppQuit = true
+
+    // Enable updates in dev mode for testing
+    if (is.dev) {
+        autoUpdater.forceDevUpdateConfig = true
+    }
+
+    // For GitHub releases
+    autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'BlessedDayss',
+        repo: 'SharkyParser'
+    })
+
+    // Update events
+    autoUpdater.on('checking-for-update', () => {
+        console.log('🔍 Checking for updates...')
+    })
+
+    autoUpdater.on('update-available', (info) => {
+        console.log('🎉 Update available:', info.version)
+        mainWindow?.webContents.send('update-available', info.version)
+    })
+
+    autoUpdater.on('update-not-available', () => {
+        console.log('✅ App is up to date')
+        mainWindow?.webContents.send('update-not-available')
+    })
+
+    autoUpdater.on('download-progress', (progress) => {
+        console.log(`⏬ Downloading: ${Math.round(progress.percent)}%`)
+        mainWindow?.webContents.send('download-progress', Math.round(progress.percent))
+    })
+
+    autoUpdater.on('update-downloaded', (info) => {
+        console.log('✅ Update downloaded, will install on quit')
+        mainWindow?.webContents.send('update-downloaded', info.version)
+    })
+
+    // Install and restart
+    ipcMain.handle('install-update', () => {
+        if (manualDownloadPath) {
+            shell.openPath(manualDownloadPath)
+            setTimeout(() => app.quit(), 1000)
+        } else {
+            autoUpdater.quitAndInstall(false, true)
+        }
+    })
+
+    autoUpdater.on('error', async (err) => {
+        console.error('❌ Update error:', err)
+
+        // Smart Fallback: Download manually if metadata is missing (e.g. no latest-mac.yml)
+        if (err.message.includes('latest-mac.yml') || err.message.includes('404') || err.message.includes('ENOENT')) {
+            console.log('⚠️ Standard mechanism failed, switching to Smart Native Download...')
+            try {
+                await startSmartDownload(mainWindow)
+            } catch (manualErr: any) {
+                console.error('Smart download failed', manualErr)
+                mainWindow?.webContents.send('update-error', 'Update failed: ' + manualErr.message)
+            }
+            return
+        }
+
+        mainWindow?.webContents.send('update-error', err.message)
+    })
+
+    // Manual check handler
+    ipcMain.handle('check-for-updates', async () => {
+        try {
+            const result = await autoUpdater.checkForUpdates()
+            return {
+                available: result?.updateInfo && result.updateInfo.version !== app.getVersion(),
+                version: result?.updateInfo.version || null
+            }
+        } catch (error: any) {
+            // If fallback mechanism handles this, don't report error to UI
+            if (error.message && (error.message.includes('latest-mac.yml') || error.message.includes('404') || error.message.includes('ENOENT'))) {
+                console.log('⚠️ Update check error swallowed (Smart Download active)')
+                return { available: false, fallbackStarted: true }
+            }
+            console.error('Update check failed:', error)
+            return { available: false, error: String(error) }
+        }
+    })
+}
+
+// Global variable to store manually downloaded update path
+let manualDownloadPath: string | null = null
+
+async function startSmartDownload(win: BrowserWindow | null) {
+    // If win arg is null, try global mainWindow
+    if (!win) win = mainWindow
+
+    // If still null, wait for it (startup race condition)
+    if (!win) {
+        console.log('⏳ Smart Download: Waiting for main window to be ready...')
+        let attempts = 0
+        while (!mainWindow && attempts < 20) { // Wait up to 10s
+            await new Promise(r => setTimeout(r, 500))
+            attempts++
+        }
+        win = mainWindow
+        if (!win) {
+            console.error('❌ Smart Download: Main window never became ready')
+            return
+        }
+    }
+
+    console.log('🚀 Smart Download: Fetching releases from GitHub API...')
+
+    // 1. Fetch latest release info manually
+    const release = await new Promise<any>((resolve, reject) => {
+        const req = https.get({
+            hostname: 'api.github.com',
+            path: '/repos/BlessedDayss/SharkyParser/releases/latest',
+            headers: { 'User-Agent': 'SharkyParser' }
+        }, (res) => {
+            let data = ''
+            res.on('data', c => data += c)
+            res.on('end', () => {
+                try { resolve(JSON.parse(data)) } catch (e) { reject(e) }
+            })
+        })
+        req.on('error', reject)
+    })
+
+    if (!release.tag_name) throw new Error('Failed to fetch release info')
+
+    // 2. Find correct asset
+    const isMac = process.platform === 'darwin'
+    const extension = isMac ? '.dmg' : '.exe'
+    const asset = release.assets.find((a: any) => a.name.endsWith(extension))
+
+    if (!asset) throw new Error(`No ${extension} installer found in release`)
+
+    // Notify UI: Update Available
+    win.webContents.send('update-available', release.tag_name)
+
+    // 3. Download
+    const tempPath = app.getPath('temp')
+    const filePath = path.join(tempPath, asset.name)
+    manualDownloadPath = filePath
+
+    const file = fs.createWriteStream(filePath)
+
+    await new Promise<void>((resolve, reject) => {
+        const req = https.get(asset.browser_download_url, {
+            headers: { 'User-Agent': 'SharkyParser' }
+        }, (res) => {
+            // Handle redirects (GitHub uses 302 for downloads)
+            if (res.statusCode === 302 && res.headers.location) {
+                https.get(res.headers.location, (redirectRes) => {
+                    const total = parseInt(redirectRes.headers['content-length'] || '0', 10)
+                    let current = 0
+
+                    redirectRes.pipe(file)
+
+                    redirectRes.on('data', (chunk) => {
+                        current += chunk.length
+                        if (total > 0) {
+                            const percent = Math.round((current / total) * 100)
+                            win.webContents.send('download-progress', percent)
+                        }
+                    })
+
+                    file.on('finish', () => {
+                        file.close()
+                        resolve()
+                    })
+                }).on('error', reject)
+                return
+            }
+
+            // Direct download (unlikely for GitHub releases but safe to handle)
+            const total = parseInt(res.headers['content-length'] || '0', 10)
+            let current = 0
+            res.pipe(file)
+
+            res.on('data', (chunk) => {
+                current += chunk.length
+                if (total > 0) {
+                    const percent = Math.round((current / total) * 100)
+                    win.webContents.send('download-progress', percent)
+                }
+            })
+            file.on('finish', () => { file.close(); resolve() })
+        })
+        req.on('error', reject)
+    })
+
+    // 4. Notify Ready
+    win.webContents.send('update-downloaded', release.tag_name)
 }

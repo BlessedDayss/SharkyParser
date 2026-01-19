@@ -68,14 +68,34 @@
             }
         ],
         "win": {
-            "target": "nsis"
+            "target": "nsis",
+            "extraResources": [
+                {
+                    "from": "dotnet-win",
+                    "to": "dotnet",
+                    "filter": [
+                        "**/*",
+                        "!*.pdb"
+                    ]
+                }
+            ]
         },
         "mac": {
             "target": "dmg",
             "identity": null
         },
         "linux": {
-            "target": "AppImage"
+            "target": "AppImage",
+            "extraResources": [
+                {
+                    "from": "dotnet-linux",
+                    "to": "dotnet",
+                    "filter": [
+                        "**/*",
+                        "!*.pdb"
+                    ]
+                }
+            ]
         },
         "publish": [
             {
@@ -84,5 +104,8 @@
                 "repo": "SharkyParser"
             }
         ]
+    },
+    "dependencies": {
+        "electron-updater": "^6.7.3"
     }
 }

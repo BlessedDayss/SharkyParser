@@ -33,6 +33,12 @@ interface AnalysisResult {
     extendedData: string
 }
 
+interface UpdateInfo {
+    available: boolean
+    version?: string
+    downloadUrl?: string
+}
+
 // State
 let allEntries: LogEntry[] = []
 let currentFilePath: string | null = null
@@ -55,12 +61,14 @@ const backendStatus = document.getElementById('backend-status') as HTMLSpanEleme
 // Nav Elements
 const navLogs = document.getElementById('nav-logs') as HTMLDivElement
 const navAnalytics = document.getElementById('nav-analytics') as HTMLDivElement
+const navSettings = document.getElementById('nav-settings') as HTMLDivElement
 const mainTitle = document.querySelector('.header-row h2') as HTMLHeadingElement
 
 // Views
 const logViewer = document.querySelector('.log-viewer-container') as HTMLDivElement
 const statsGrid = document.querySelector('.stats-grid') as HTMLDivElement
 const analysisDashboard = document.getElementById('analysis-dashboard') as HTMLDivElement
+const settingsDashboard = document.getElementById('settings-dashboard') as HTMLDivElement
 
 // Dashboard Elements
 const healthPulse = document.getElementById('health-pulse') as HTMLDivElement
@@ -68,7 +76,13 @@ const healthText = document.getElementById('health-text') as HTMLDivElement
 const distributionBars = document.getElementById('distribution-bars') as HTMLDivElement
 const topSourcesList = document.getElementById('top-sources-list') as HTMLDivElement
 
-// Initialize - Backend status already checked before window showed
+// Settings Elements
+const themeToggle = document.getElementById('theme-toggle') as HTMLInputElement
+const themeLabel = document.getElementById('theme-label') as HTMLSpanElement
+const checkUpdateBtn = document.getElementById('check-update-btn') as HTMLButtonElement
+const updateStatus = document.getElementById('update-status') as HTMLDivElement
+
+// Initialize
 window.addEventListener('DOMContentLoaded', async () => {
     try {
         const isReady = await (window as any).electron.ipcRenderer.invoke('check-csharp-backend')
@@ -77,51 +91,143 @@ window.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         backendStatus.textContent = 'Error ⚠️'
     }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'dark'
+    applyTheme(savedTheme)
+})
+
+// Theme Management
+themeToggle.addEventListener('change', () => {
+    const newTheme = themeToggle.checked ? 'light' : 'dark'
+    applyTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+})
+
+function applyTheme(theme: string) {
+    if (theme === 'light') {
+        document.body.classList.add('light-theme')
+        themeToggle.checked = true
+        themeLabel.textContent = 'Light'
+    } else {
+        document.body.classList.remove('light-theme')
+        themeToggle.checked = false
+        themeLabel.textContent = 'Dark'
+    }
+}
+
+// Auto-Update
+// Auto-Update Events
+window.addEventListener('DOMContentLoaded', () => {
+    const ipc = (window as any).electron.ipcRenderer
+
+    ipc.on('update-available', (_: any, version: string) => {
+        updateStatus.style.display = 'block'
+        updateStatus.innerHTML = `
+            <div style="color: var(--accent-primary);">⬇️ Downloading update ${version}...</div>
+            <div class="progress-bar-bg" style="margin-top: 8px; height: 6px;">
+                <div class="progress-bar-fill" id="update-progress" style="width: 0%"></div>
+            </div>
+        `
+    })
+
+    ipc.on('download-progress', (_: any, percent: number) => {
+        const bar = document.getElementById('update-progress')
+        if (bar) bar.style.width = `${percent}%`
+    })
+
+    ipc.on('update-downloaded', (_: any, version: string) => {
+        updateStatus.innerHTML = `
+            <div style="color: var(--success); font-weight: 600;">✅ Update ${version} Ready!</div>
+            <button class="update-btn" id="restart-btn" style="margin-top: 8px; width: 100%; justify-content: center;">
+                <span>🚀</span> Restart to Install
+            </button>
+        `
+        document.getElementById('restart-btn')?.addEventListener('click', () => {
+            ipc.invoke('install-update')
+        })
+    })
+
+    ipc.on('update-error', (_: any, err: string) => {
+        updateStatus.style.display = 'block'
+        updateStatus.innerHTML = `<div style="color: var(--error);">❌ Update Error: ${err}</div>`
+    })
+})
+
+// Manual Check (Optional)
+checkUpdateBtn.addEventListener('click', async () => {
+    checkUpdateBtn.disabled = true
+    checkUpdateBtn.innerHTML = '<span>⏳</span> Checking...'
+
+    try {
+        const result = await (window as any).electron.ipcRenderer.invoke('check-for-updates')
+
+        if (result.fallbackStarted) {
+            // Do nothing, wait for events
+            console.log('Fallback update mechanism triggered')
+        } else if (!result.available) {
+            updateStatus.style.display = 'block'
+            updateStatus.innerHTML = '<div style="color: var(--success);">✅ You are on the latest version</div>'
+            setTimeout(() => { updateStatus.style.display = 'none' }, 3000)
+        }
+    } finally {
+        checkUpdateBtn.disabled = false
+        checkUpdateBtn.innerHTML = '<span>🔄</span> Check for Updates'
+    }
 })
 
 // Navigation
 navLogs.addEventListener('click', () => switchView('logs'))
 navAnalytics.addEventListener('click', () => switchView('analytics'))
+navSettings.addEventListener('click', () => switchView('settings'))
 
-async function switchView(view: 'logs' | 'analytics') {
+async function switchView(view: 'logs' | 'analytics' | 'settings') {
+    // Reset all nav items
+    navLogs.classList.remove('active')
+    navAnalytics.classList.remove('active')
+    navSettings.classList.remove('active')
+
+    // Hide all views
+    logViewer.style.display = 'none'
+    statsGrid.style.display = 'none'
+    analysisDashboard.style.display = 'none'
+    settingsDashboard.style.display = 'none'
+
     if (view === 'analytics' && !currentFilePath) {
         alert('Please open a log file first!')
+        switchView('logs') // Fall back to logs
         return
     }
 
     if (view === 'logs') {
         navLogs.classList.add('active')
-        navAnalytics.classList.remove('active')
         mainTitle.textContent = 'Dashboard'
         logViewer.style.display = 'flex'
         statsGrid.style.display = 'grid'
-        analysisDashboard.style.display = 'none'
-    } else {
+    } else if (view === 'analytics') {
         navAnalytics.classList.add('active')
-        navLogs.classList.remove('active')
         mainTitle.textContent = 'System Analysis'
-        logViewer.style.display = 'none'
-        statsGrid.style.display = 'none'
         analysisDashboard.style.display = 'flex'
-
         try {
             const analysis: AnalysisResult = await (window as any).electron.ipcRenderer.invoke('analyze-log-csharp', currentFilePath)
             renderDashboard(analysis)
         } catch (err) {
             console.error('Analysis failed', err)
         }
+    } else if (view === 'settings') {
+        navSettings.classList.add('active')
+        mainTitle.textContent = 'Settings'
+        settingsDashboard.style.display = 'flex'
     }
 }
 
 function renderDashboard(data: AnalysisResult) {
-    // Health Update
     const isHealthy = data.status === 'HEALTHY'
     healthPulse.className = `status-pulse ${isHealthy ? 'healthy' : 'unhealthy'}`
     healthPulse.textContent = isHealthy ? '✓' : '⚠'
     healthText.textContent = isHealthy ? 'System Healthy' : 'Action Required'
     healthText.style.color = isHealthy ? 'var(--success)' : 'var(--error)'
 
-    // Distribution Bars
     const total = data.total || 1
     distributionBars.innerHTML = `
         ${renderProgressBar('Errors', data.errors, total, 'var(--error)')}
@@ -129,7 +235,6 @@ function renderDashboard(data: AnalysisResult) {
         ${renderProgressBar('Informational', data.info, total, 'var(--info)')}
     `
 
-    // Top Sources
     topSourcesList.innerHTML = ''
     if (data.extendedData) {
         data.extendedData.split('|').forEach(sourceStr => {
@@ -157,7 +262,6 @@ function renderProgressBar(label: string, value: number, total: number, color: s
     `
 }
 
-// File Selection
 selectFileBtn.addEventListener('click', async () => {
     try {
         const result: string = await (window as any).electron.ipcRenderer.invoke('select-file')
@@ -179,7 +283,6 @@ selectFileBtn.addEventListener('click', async () => {
     }
 })
 
-// Filters & Rendering
 searchInput.addEventListener('input', () => applyFilters())
 levelFilter.addEventListener('change', () => applyFilters())
 

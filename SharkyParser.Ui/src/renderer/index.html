@@ -131,6 +131,56 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Settings View -->
+            <div class="settings-dashboard" id="settings-dashboard">
+                <div class="dashboard-row">
+                    <div class="dash-card">
+                        <h3 style="font-family: 'Outfit';">Appearance</h3>
+                        <div style="margin-top: 16px;">
+                            <label
+                                style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                                <span style="font-size: 14px;">Theme</span>
+                                <div class="theme-toggle">
+                                    <input type="checkbox" id="theme-toggle" />
+                                    <span class="theme-slider"></span>
+                                    <span class="theme-label" id="theme-label">Dark</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="dash-card">
+                        <h3 style="font-family: 'Outfit';">Updates</h3>
+                        <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 500;">Current Version</div>
+                                    <div style="font-size: 12px; color: var(--text-dim);" id="current-version">v1.1.4
+                                    </div>
+                                </div>
+                                <button class="update-btn" id="check-update-btn">
+                                    <span>🔄</span> Check for Updates
+                                </button>
+                            </div>
+                            <div id="update-status" style="font-size: 13px; color: var(--text-dim); display: none;">
+                                <!-- Update status will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 style="font-family: 'Outfit';">About</h3>
+                    <div style="color: var(--text-dim); line-height: 1.6; font-size: 14px; margin-top: 12px;">
+                        <p><strong style="color: var(--accent-primary);">Sharky Parser PRO</strong> — Advanced Log
+                            Analysis System</p>
+                        <p style="margin-top: 8px;">Built with Electron, TypeScript, and C#. Designed for
+                            enterprise-level log parsing and analysis.</p>
+                        <p style="margin-top: 8px; font-size: 12px;">© 2026 Sharky Parser. All rights reserved.</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
