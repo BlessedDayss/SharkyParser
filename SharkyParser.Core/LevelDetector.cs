@@ -63,13 +63,18 @@ public static class LevelDetector
 
     private static bool ContainsLevelMarker(string line, string level)
     {
-        return Regex.IsMatch(line, $@"(\[|\s|^){level}(\]|\s|:|$)", RegexOptions.IgnoreCase);
+        return Regex.IsMatch(line, $@"(\[|\s|^){level}(\]|\s|:|$)", RegexOptions.IgnoreCase,
+            TimeSpan.FromMilliseconds(500));
     }
 
+    private static readonly Regex FalsePositiveRegex =
+        new(
+            @"\b(0\s+(errors?|warnings?)|no\s+errors?)\b",
+            RegexOptions.Compiled,
+            TimeSpan.FromMilliseconds(50)
+        );
     private static bool IsFalsePositive(string lowerLine)
     {
-        return Regex.IsMatch(lowerLine, @"\b0\s+errors?\b") ||
-               Regex.IsMatch(lowerLine, @"\b0\s+warnings?\b") ||
-               Regex.IsMatch(lowerLine, @"\bno\s+errors?\b");
+        return FalsePositiveRegex.IsMatch(lowerLine);
     }
 }

@@ -4,14 +4,15 @@ on:
   push:
     branches: [ main ]
 
-permissions:
-  contents: write
-  packages: write
+
 
 jobs:
   release:
     if: startsWith(github.event.head_commit.message, 'v')
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      packages: write
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -55,8 +56,10 @@ jobs:
     - name: Extract Version
       id: get_version
       shell: bash
+      env:
+        COMMIT_MSG: ${{ github.event.head_commit.message }}
       run: |
-        VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sed 's/v//')
+        VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sed 's/v//')
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Detected version: $VERSION"
 
@@ -111,14 +114,18 @@ jobs:
   create_release:
     needs: release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       
       - name: Extract Version
         id: get_version
         shell: bash
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
