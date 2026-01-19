@@ -522,7 +522,7 @@ h1 {
 
 .source-name {
     font-weight: 500;
-    font-family: 'Outfit';
+    font-family: 'Outfit', sans-serif;
 }
 
 .source-count {
