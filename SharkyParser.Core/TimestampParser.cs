@@ -1,12 +1,9 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace SharkyParser.Core;
 
 public static partial class TimestampParser
 {
-    private static readonly Regex Pattern = TimestampRegex();
-    
     private static readonly string[] Formats =
     {
         "yyyy-MM-dd HH:mm:ss,fff",
@@ -22,17 +19,41 @@ public static partial class TimestampParser
         "HH:mm:ss"
     };
 
-    public static bool TryMatch(string line, out Match match)
+    public static bool TryParse(string line, out DateTime result, out int length)
     {
-        match = Pattern.Match(line);
-        return match.Success && 
-               (match.Length == line.Length || char.IsWhiteSpace(line[match.Length]));
-    }
+        result = default;
+        length = 0;
 
+        if (string.IsNullOrWhiteSpace(line))
+            return false;
+
+        for (int len = Math.Min(line.Length, 23); len >= 8; len--)
+        {
+            if (!char.IsDigit(line[0])) return false;
+
+            var potential = line.Substring(0, len);
+            
+            foreach (var format in Formats)
+            {
+                if (format.Length == len && 
+                    DateTime.TryParseExact(potential, format, CultureInfo.InvariantCulture, 
+                        DateTimeStyles.None, out result))
+                {
+                    if (line.Length == len || char.IsWhiteSpace(line[len]))
+                    {
+                        length = len;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+    
     public static bool TryParse(string text, out DateTime result)
     {
         var normalized = text.Trim();
-        
         foreach (var format in Formats)
         {
             if (DateTime.TryParseExact(normalized, format, CultureInfo.InvariantCulture, 
@@ -41,10 +62,6 @@ public static partial class TimestampParser
                 return true;
             }
         }
-
         return DateTime.TryParse(normalized, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
     }
-
-    [GeneratedRegex(@"^(\d{4}[-/]\d{2}[-/]\d{2}\s+)?(\d{1,2}):(\d{2}):(\d{2})([,.:]\d{1,4})?(?=\s|$)", RegexOptions.Compiled)]
-    private static partial Regex TimestampRegex();
 }

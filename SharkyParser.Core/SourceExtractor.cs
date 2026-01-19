@@ -1,26 +1,45 @@
-using System.Text.RegularExpressions;
-
 namespace SharkyParser.Core;
 
 public static class SourceExtractor
 {
-    private static readonly Regex LevelPattern = 
-        new(@"^(INFO|ERROR|WARN|WARNING|DEBUG|TRACE|FATAL|CRITICAL|ERR|ERRO)\s+", RegexOptions.IgnoreCase);
+    private static readonly string[] Levels = 
+        { "INFO", "ERROR", "WARN", "WARNING", "DEBUG", "TRACE", "FATAL", "CRITICAL", "ERR", "ERRO" };
 
     public static string Extract(ref string messagePart)
     {
-        var levelMatch = LevelPattern.Match(messagePart);
-        if (levelMatch.Success)
+        foreach (var level in Levels)
         {
-            messagePart = messagePart[levelMatch.Length..];
+            if (messagePart.StartsWith(level, StringComparison.OrdinalIgnoreCase))
+            {
+                int endOfLevel = level.Length;
+                if (endOfLevel < messagePart.Length && char.IsWhiteSpace(messagePart[endOfLevel]))
+                {
+                    // Skip whitespaces after level
+                    int startOfNext = endOfLevel;
+                    while (startOfNext < messagePart.Length && char.IsWhiteSpace(messagePart[startOfNext]))
+                        startOfNext++;
+                    
+                    messagePart = messagePart[startOfNext..];
+                    break;
+                }
+            }
         }
 
-        var sourceMatch = Regex.Match(messagePart, @"^\[([^\]]+)\]\s*");
-        if (sourceMatch.Success)
+        // 2. Extract [Source]
+        if (messagePart.StartsWith('['))
         {
-            var source = sourceMatch.Groups[1].Value;
-            messagePart = messagePart[sourceMatch.Length..];
-            return source;
+            int closeBracketIndex = messagePart.IndexOf(']');
+            if (closeBracketIndex > 1) // Must have at least one char between [ and ]
+            {
+                string source = messagePart[1..closeBracketIndex];
+                
+                int startOfMessage = closeBracketIndex + 1;
+                while (startOfMessage < messagePart.Length && char.IsWhiteSpace(messagePart[startOfMessage]))
+                    startOfMessage++;
+                
+                messagePart = messagePart[startOfMessage..];
+                return source;
+            }
         }
 
         return string.Empty;

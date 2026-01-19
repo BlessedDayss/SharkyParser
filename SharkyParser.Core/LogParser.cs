@@ -9,11 +9,10 @@ public class LogParser : ILogParser
         if (string.IsNullOrWhiteSpace(line))
             return null;
 
-        if (TimestampParser.TryMatch(line, out var match) && 
-            TimestampParser.TryParse(match.Value, out var timestamp))
+        if (TimestampParser.TryParse(line, out var timestamp, out var length))
         {
-            var messagePart = line[match.Length..].Trim();
-            var level = LevelDetector.Detect(line, messagePart);
+            var messagePart = line[length..].Trim();
+            var level = LevelDetector.Detect(line);
             var source = SourceExtractor.Extract(ref messagePart);
             
             return new LogEntry
@@ -26,7 +25,7 @@ public class LogParser : ILogParser
             };
         }
         
-        var standaloneLevel = LevelDetector.Detect(line, line);
+        var standaloneLevel = LevelDetector.Detect(line);
         return new LogEntry
         {
             Timestamp = DateTime.MinValue,
@@ -48,14 +47,13 @@ public class LogParser : ILogParser
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            if (TimestampParser.TryMatch(line, out var match) && 
-                TimestampParser.TryParse(match.Value, out var timestamp))
+            if (TimestampParser.TryParse(line, out var timestamp, out var length))
             {
                 if (lastEntry != null)
                     yield return lastEntry;
                 
-                var messagePart = line[match.Length..].Trim();
-                var level = LevelDetector.Detect(line, messagePart);
+                var messagePart = line[length..].Trim();
+                var level = LevelDetector.Detect(line);
                 var source = SourceExtractor.Extract(ref messagePart);
                 
                 lastEntry = new LogEntry
@@ -87,7 +85,7 @@ public class LogParser : ILogParser
                     if (lastEntry != null)
                         yield return lastEntry;
                     
-                    var level = LevelDetector.Detect(line, line);
+                    var level = LevelDetector.Detect(line);
                     lastEntry = new LogEntry
                     {
                         Timestamp = DateTime.MinValue,
