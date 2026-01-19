@@ -46,7 +46,9 @@ public static partial class LevelDetector
             if (TraceMarkerRegex().IsMatch(fullLine)) return LogLevel.Trace;
             if (InfoMarkerRegex().IsMatch(fullLine)) return LogLevel.Info;
             if (ErrorKeywordRegex().IsMatch(fullLine)) return LogLevel.Error;
-            return WarnKeywordRegex().IsMatch(fullLine) ? LogLevel.Warn : LogLevel.Info;
+            if (WarnKeywordRegex().IsMatch(fullLine)) return LogLevel.Warn;
+            
+            return LogLevel.Info;
         }
         catch (RegexMatchTimeoutException)
         {
