@@ -11,7 +11,10 @@
 
         <!-- Application metadata -->
         <Version>1.0.4</Version>
-        <Authors>BlessedDays</Authors>
+        <Authors>Orkhan Gojayev</Authors>
+        <Company>OGTech</Company>
+        <Product>SharkyParser</Product>
+        <Copyright>Copyright © 2026 OGTech</Copyright>
         <Description>Self-contained log parser for Electron application</Description>
     </PropertyGroup>
 

@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { optimizer, is } from '@electron-toolkit/utils'
@@ -22,6 +22,7 @@ function createSplashScreen(): BrowserWindow {
         transparent: true,
         frame: false,
         alwaysOnTop: true,
+        icon: join(__dirname, '../../resources/icon.ico'),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true
@@ -119,12 +120,15 @@ function createSplashScreen(): BrowserWindow {
       </script>
     </body>
     </html>
-  `)}`)
+    `)}`)
 
     return splash
 }
 
 function createMainWindow(): BrowserWindow {
+    const iconPath = join(__dirname, '../../resources/icon.ico')
+    const icon = nativeImage.createFromPath(iconPath)
+
     const main = new BrowserWindow({
         width: 1200,
         height: 850,
@@ -132,6 +136,7 @@ function createMainWindow(): BrowserWindow {
         autoHideMenuBar: true,
         titleBarStyle: 'hiddenInset',
         backgroundColor: '#05060f',
+        icon: icon,
         webPreferences: {
             preload: join(__dirname, '../preload/index.mjs'),
             sandbox: false,
