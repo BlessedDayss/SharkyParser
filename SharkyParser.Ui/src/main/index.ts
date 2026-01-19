@@ -208,6 +208,11 @@ app.whenReady().then(async () => {
         return backendReady
     })
 
+    ipcMain.handle('get-app-version', () => {
+        return app.getVersion()
+    })
+
+
     ipcMain.handle('parse-log-csharp', async (_, filePath: string) => {
         const sharkyPath = findSharky()
         return new Promise((resolve, reject) => {

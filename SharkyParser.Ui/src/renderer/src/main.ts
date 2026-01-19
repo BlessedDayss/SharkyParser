@@ -92,6 +92,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         backendStatus.textContent = 'Error ⚠️'
     }
 
+    // Load current version
+    try {
+        const version = await (window as any).electron.ipcRenderer.invoke('get-app-version')
+        const versionEl = document.getElementById('current-version')
+        if (versionEl) versionEl.textContent = `v${version}`
+    } catch (err) {
+        console.error('Failed to load version:', err)
+    }
+
     // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'dark'
     applyTheme(savedTheme)
