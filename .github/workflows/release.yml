@@ -94,7 +94,7 @@ jobs:
     - name: Install Node dependencies
       run: |
         cd SharkyParser.Ui
-        npm install
+        npm ci
 
     - name: Build Electron App
       env:

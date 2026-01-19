@@ -12,7 +12,7 @@ public class LogParser : ILogParser
         if (TimestampParser.TryParse(line, out var timestamp, out var length))
         {
             var messagePart = line[length..].Trim();
-            var level = LevelDetector.Detect(line);
+            var level = LevelDetector.Detect(messagePart);
             var source = SourceExtractor.Extract(ref messagePart);
             
             return new LogEntry

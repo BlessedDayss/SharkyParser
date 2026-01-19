@@ -90,7 +90,7 @@ public class LogParserTests
         var result = _sut.ParseLine("2025-01-01 12:00:00 FATAL System crash");
 
         result.Should().NotBeNull();
-        result!.Level.Should().Be("FATAL");
+        result!.Level.Should().Be("ERROR");
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class LogParserTests
         var result = _sut.ParseLine("2025-01-01 12:00:00 CRITICAL Out of memory");
 
         result.Should().NotBeNull();
-        result!.Level.Should().Be("CRITICAL");
+        result!.Level.Should().Be("ERROR");
     }
 
     [Fact]

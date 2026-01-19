@@ -4,12 +4,12 @@ namespace SharkyParser.Core;
 
 public static partial class LevelDetector
 {
-    private const int RegexTimeoutMs = 100;
+    private const int RegexTimeoutMs = 500;
 
-    [GeneratedRegex(@"\b(error|err|erro)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    [GeneratedRegex(@"\b(error|err|erro|fatal|critical)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
     private static partial Regex ErrorMarkerRegex();
 
-    [GeneratedRegex(@"\b(exception|failed?|timeout)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    [GeneratedRegex(@"\b(exception|failed?|timeout|crash)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
     private static partial Regex ErrorKeywordRegex();
 
     [GeneratedRegex(@"\b(warn|warning)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
@@ -27,7 +27,7 @@ public static partial class LevelDetector
     [GeneratedRegex(@"\b(trace)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
     private static partial Regex TraceMarkerRegex();
 
-    [GeneratedRegex(@"(0\s+(error|warning)|no\s+error)", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    [GeneratedRegex(@"(?:0\s+(?:error|warning)|no\s+error)", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
     private static partial Regex FalsePositiveRegex();
 
     public static string Detect(string fullLine)
@@ -37,17 +37,44 @@ public static partial class LevelDetector
 
         try
         {
-            if (IsFalsePositive(fullLine))
+            var line = fullLine.Trim();
+
+            if (IsFalsePositive(line))
                 return LogLevel.Info;
 
-            if (ErrorMarkerRegex().IsMatch(fullLine)) return LogLevel.Error;
-            if (WarnMarkerRegex().IsMatch(fullLine)) return LogLevel.Warn;
-            if (DebugMarkerRegex().IsMatch(fullLine)) return LogLevel.Debug;
-            if (TraceMarkerRegex().IsMatch(fullLine)) return LogLevel.Trace;
-            if (InfoMarkerRegex().IsMatch(fullLine)) return LogLevel.Info;
-            if (ErrorKeywordRegex().IsMatch(fullLine)) return LogLevel.Error;
-            if (WarnKeywordRegex().IsMatch(fullLine)) return LogLevel.Warn;
-            
+            // Check for exact level matches at the beginning of the line
+            if (line.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("ERR ", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("ERRO ", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Error;
+
+            if (line.StartsWith("WARN", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("WARNING", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Warn;
+
+            if (line.StartsWith("DEBUG", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("DBG ", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Debug;
+
+            if (line.StartsWith("TRACE", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Trace;
+
+            if (line.StartsWith("INFO", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Info;
+
+            if (line.StartsWith("FATAL", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("CRITICAL", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Error;
+
+            // Fall back to regex patterns
+            if (ErrorMarkerRegex().IsMatch(line)) return LogLevel.Error;
+            if (WarnMarkerRegex().IsMatch(line)) return LogLevel.Warn;
+            if (DebugMarkerRegex().IsMatch(line)) return LogLevel.Debug;
+            if (TraceMarkerRegex().IsMatch(line)) return LogLevel.Trace;
+            if (InfoMarkerRegex().IsMatch(line)) return LogLevel.Info;
+            if (ErrorKeywordRegex().IsMatch(line)) return LogLevel.Error;
+            if (WarnKeywordRegex().IsMatch(line)) return LogLevel.Warn;
+
             return LogLevel.Info;
         }
         catch (RegexMatchTimeoutException)
