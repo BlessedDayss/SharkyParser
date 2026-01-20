@@ -59,8 +59,6 @@ jobs:
       env:
         COMMIT_MSG: ${{ github.event.head_commit.message }}
       run: |
-        # Robustly extract version (e.g., 1.2.3) from "v1.2.3: message"
-        # We take the first match of a version-like string and strip the 'v'
         VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1 | sed 's/v//' || echo "1.1.8")
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Detected version: $VERSION"
@@ -114,6 +112,7 @@ jobs:
           SharkyParser.Ui/dist/*.dmg
           SharkyParser.Ui/dist/*.AppImage
           SharkyParser.Ui/dist/*.zip
+          SharkyParser.Ui/dist/*.yml
 
   create_release:
     needs: release
