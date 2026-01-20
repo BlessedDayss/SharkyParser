@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
 import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { optimizer, is } from '@electron-toolkit/utils'
 import { spawn } from 'child_process'
 import * as fs from 'fs'
@@ -8,7 +9,7 @@ import * as https from 'https'
 import pkg from 'electron-updater'
 const { autoUpdater } = pkg
 
-const __dirname = dirname(__filename)
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const APP_ID = 'Sharky.Pro.v1'
 if (process.platform === 'win32') {

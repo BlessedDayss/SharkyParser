@@ -25,7 +25,6 @@ Whether you're troubleshooting complex installation logs, monitoring IIS traffic
   - 🌐 **IIS Logs** (Under development)
   - 🐇 **RabbitMQ Logs** (Under development)
   - 🔄 **Update Logs**
-- **Smart Timestamp Extraction**: Automatically handles `[HH:mm:ss]` and ISO-like `yyyy-MM-dd HH:mm:ss,fff` formats.
 
 ### ⌨️ Command Line Interface (CLI)
 - **Table Mode**: Beautifully rendered ASCII tables for quick terminal inspection.
@@ -40,7 +39,7 @@ Whether you're troubleshooting complex installation logs, monitoring IIS traffic
 
 1.  Download the latest installer from the [Releases](https://github.com/BlessedDayss/SharkyParser/releases) page.
 2.  Install and launch **SharkyParser**.
-3.  Open any log file (e.g., `install.log`) and let Sharky do the work.
+3.  Open any installation log file (e.g., `install.log`) and let Sharky do the work.
 
 ### For Developers
 
