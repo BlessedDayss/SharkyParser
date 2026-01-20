@@ -1,6 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
 import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
 import { optimizer, is } from '@electron-toolkit/utils'
 import { spawn } from 'child_process'
 import * as fs from 'fs'
@@ -9,23 +8,37 @@ import * as https from 'https'
 import pkg from 'electron-updater'
 const { autoUpdater } = pkg
 
-const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+const APP_ID = 'Sharky.Pro.v1'
+if (process.platform === 'win32') {
+    app.setAppUserModelId(APP_ID)
+}
 
 let splashWindow: BrowserWindow | null = null
 let mainWindow: BrowserWindow | null = null
 
 function createSplashScreen(): BrowserWindow {
+    const resourcesPath = app.isPackaged
+        ? path.join(process.resourcesPath, 'assets')
+        : path.join(app.getAppPath(), 'resources')
+
+    // Using high-quality PNG for Splash
+    const iconPath = path.join(resourcesPath, 'app_icon.png')
+    const icon = nativeImage.createFromPath(iconPath)
+
     const splash = new BrowserWindow({
-        width: 400,
-        height: 300,
+        width: 440,
+        height: 340,
         transparent: true,
         frame: false,
         alwaysOnTop: true,
-        icon: join(__dirname, '../../resources/icon.ico'),
+        skipTaskbar: true, // IMPORTANT: Prevents double icons in taskbar
+        icon: icon.isEmpty() ? undefined : icon,
         webPreferences: {
             nodeIntegration: false,
-            contextIsolation: true
+            contextIsolation: true,
+            sandbox: false
         }
     })
 
@@ -34,89 +47,28 @@ function createSplashScreen(): BrowserWindow {
     <html>
     <head>
       <style>
-        body {
-          margin: 0;
-          padding: 0;
-          background: transparent;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          font-family: 'Inter', -apple-system, sans-serif;
-          overflow: hidden;
-        }
-        .splash-container {
-          background: linear-gradient(135deg, #0f1123 0%, #1a1d35 100%);
-          border-radius: 24px;
-          padding: 40px;
-          box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.1);
-          text-align: center;
-          border: 1px solid rgba(255,255,255,0.1);
-        }
-        .logo {
-          font-size: 64px;
-          margin-bottom: 20px;
-          animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        .title {
-          font-size: 24px;
-          font-weight: 700;
-          background: linear-gradient(to right, #fff, #94a3b8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          margin-bottom: 10px;
-        }
-        .subtitle {
-          font-size: 12px;
-          color: #94a3b8;
-          margin-bottom: 30px;
-        }
-        .loader {
-          width: 200px;
-          height: 4px;
-          background: rgba(255,255,255,0.1);
-          border-radius: 2px;
-          overflow: hidden;
-          margin: 0 auto;
-        }
-        .loader-bar {
-          height: 100%;
-          background: linear-gradient(90deg, #7000ff, #00f2ff);
-          border-radius: 2px;
-          animation: loading 1.5s ease-in-out infinite;
-        }
-        @keyframes loading {
-          0% { width: 0%; margin-left: 0%; }
-          50% { width: 50%; margin-left: 25%; }
-          100% { width: 0%; margin-left: 100%; }
-        }
-        .status {
-          margin-top: 20px;
-          font-size: 11px;
-          color: #00f2ff;
-          height: 16px;
-        }
+        body { margin: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        .container { background: linear-gradient(135deg, #05060f 0%, #101225 100%); border-radius: 32px; padding: 45px; box-shadow: 0 40px 80px rgba(0,0,0,0.8); text-align: center; border: 1px solid rgba(255,255,255,0.1); width: 310px; position: relative; }
+        .logo { font-size: 90px; margin-bottom: 25px; filter: drop-shadow(0 0 25px rgba(0, 242, 255, 0.5)); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-12px) rotate(5deg); } }
+        .title { font-size: 28px; font-weight: 900; background: linear-gradient(to right, #fff, #00f2ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; letter-spacing: -1px; }
+        .subtitle { font-size: 13px; color: #64748b; margin-bottom: 35px; text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
+        .loader { width: 230px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin: 0 auto; }
+        .bar { height: 100%; background: linear-gradient(90deg, #7c3aed, #06b6d4); border-radius: 10px; width: 40%; animation: load 1.8s ease-in-out infinite; }
+        @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+        .status { margin-top: 25px; font-size: 11px; color: #00f2ff; opacity: 0.8; font-weight: 700; letter-spacing: 1px; }
       </style>
     </head>
     <body>
-      <div class="splash-container">
+      <div class="container">
         <div class="logo">🦈</div>
-        <div class="title">Sharky Parser PRO</div>
-        <div class="subtitle">Advanced Log Analysis System</div>
-        <div class="loader"><div class="loader-bar"></div></div>
-        <div class="status" id="status">Initializing backend...</div>
+        <div class="title">SHARKY PARSER</div>
+        <div class="subtitle">Ultimate Engine</div>
+        <div class="loader"><div class="bar"></div></div>
+        <div class="status" id="st">LOADING SYSTEM...</div>
       </div>
       <script>
-        let dots = 0;
-        setInterval(() => {
-          dots = (dots + 1) % 4;
-          const status = document.getElementById('status');
-          if (status) status.textContent = 'Initializing backend' + '.'.repeat(dots);
-        }, 500);
+        let d = 0; setInterval(() => { d = (d + 1) % 4; document.getElementById('st').innerText = 'LOADING SYSTEM' + '.'.repeat(d); }, 500);
       </script>
     </body>
     </html>
@@ -126,17 +78,20 @@ function createSplashScreen(): BrowserWindow {
 }
 
 function createMainWindow(): BrowserWindow {
-    const iconPath = join(__dirname, '../../resources/icon.ico')
-    const icon = nativeImage.createFromPath(iconPath)
+    const resourcesPath = app.isPackaged
+        ? path.join(process.resourcesPath, 'assets') // In production
+        : path.join(app.getAppPath(), 'resources')   // In development/preview
+
+    const icon = nativeImage.createFromPath(path.join(resourcesPath, 'app_icon.png'))
 
     const main = new BrowserWindow({
         width: 1200,
         height: 850,
         show: false,
         autoHideMenuBar: true,
-        titleBarStyle: 'hiddenInset',
         backgroundColor: '#05060f',
-        icon: icon,
+        title: 'Sharky Parser PRO',
+        icon: icon.isEmpty() ? undefined : icon,
         webPreferences: {
             preload: join(__dirname, '../preload/index.mjs'),
             sandbox: false,
@@ -150,6 +105,11 @@ function createMainWindow(): BrowserWindow {
             splashWindow.close()
             splashWindow = null
         }
+
+        if (process.platform === 'win32') {
+            app.setAppUserModelId(APP_ID)
+        }
+
         main.show()
     })
 
@@ -169,15 +129,10 @@ function createMainWindow(): BrowserWindow {
 
 async function checkBackend(): Promise<boolean> {
     const sharkyPath = findSharky()
-    console.log('Checking backend at:', sharkyPath)
     return fs.existsSync(sharkyPath)
 }
 
 app.whenReady().then(async () => {
-    if (process.platform === 'win32') {
-        app.setAppUserModelId('com.sharkyparser.app')
-    }
-
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window)
     })

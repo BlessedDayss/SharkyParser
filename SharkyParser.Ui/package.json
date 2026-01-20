@@ -47,7 +47,7 @@
         "appId": "com.sharkyparser.app",
         "productName": "SharkyParser",
         "copyright": "Copyright © 2026 OGTech",
-        "icon": "resources/icon.png",
+        "icon": "resources/app_icon.png",
         "linux": {
             "target": "AppImage",
             "category": "Utility",
