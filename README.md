@@ -83,7 +83,7 @@ Sharky Parser is built on a "Decoupled Hybrid" architecture:
 
 ## 📸 Screenshots
 
-*(Use the app's professional Glassmorphic design to experience it first-hand!)*
+*WILL BE SOON*
 
 ---
 
