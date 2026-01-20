@@ -59,7 +59,9 @@ jobs:
       env:
         COMMIT_MSG: ${{ github.event.head_commit.message }}
       run: |
-        VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sed 's/v//')
+        # Robustly extract version (e.g., 1.2.3) from "v1.2.3: message"
+        # We take the first match of a version-like string and strip the 'v'
+        VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1 | sed 's/v//' || echo "1.1.8")
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Detected version: $VERSION"
 
@@ -127,7 +129,8 @@ jobs:
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          # Robustly extract full tag (e.g., v1.2.3)
+          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || echo "v1.1.8")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
