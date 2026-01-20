@@ -11,7 +11,6 @@ public static class Startup
     public static IServiceCollection ConfigureServices()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<ILogParser, LogParser>();
         services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
         return services;
     }

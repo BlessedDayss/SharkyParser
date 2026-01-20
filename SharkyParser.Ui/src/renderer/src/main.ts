@@ -39,11 +39,10 @@ interface UpdateInfo {
     downloadUrl?: string
 }
 
-// State
 let allEntries: LogEntry[] = []
 let currentFilePath: string | null = null
+let selectedLogType: string = 'Installation'
 
-// DOM Elements
 const selectFileBtn = document.getElementById('select-file-btn') as HTMLButtonElement
 const logBody = document.getElementById('log-body') as HTMLTableSectionElement
 const statTotal = document.getElementById('stat-total') as HTMLSpanElement
@@ -58,31 +57,29 @@ const searchInput = document.getElementById('search-input') as HTMLInputElement
 const levelFilter = document.getElementById('level-filter') as HTMLSelectElement
 const backendStatus = document.getElementById('backend-status') as HTMLSpanElement
 
-// Nav Elements
 const navLogs = document.getElementById('nav-logs') as HTMLDivElement
 const navAnalytics = document.getElementById('nav-analytics') as HTMLDivElement
+const navChangelog = document.getElementById('nav-changelog') as HTMLDivElement
 const navSettings = document.getElementById('nav-settings') as HTMLDivElement
 const mainTitle = document.querySelector('.header-row h2') as HTMLHeadingElement
 
-// Views
 const logViewer = document.querySelector('.log-viewer-container') as HTMLDivElement
 const statsGrid = document.querySelector('.stats-grid') as HTMLDivElement
 const analysisDashboard = document.getElementById('analysis-dashboard') as HTMLDivElement
+const changelogDashboard = document.getElementById('changelog-dashboard') as HTMLDivElement
 const settingsDashboard = document.getElementById('settings-dashboard') as HTMLDivElement
+const logTypeSection = document.getElementById('log-type-section') as HTMLDivElement
 
-// Dashboard Elements
 const healthPulse = document.getElementById('health-pulse') as HTMLDivElement
 const healthText = document.getElementById('health-text') as HTMLDivElement
 const distributionBars = document.getElementById('distribution-bars') as HTMLDivElement
 const topSourcesList = document.getElementById('top-sources-list') as HTMLDivElement
 
-// Settings Elements
 const themeToggle = document.getElementById('theme-toggle') as HTMLInputElement
 const themeLabel = document.getElementById('theme-label') as HTMLSpanElement
 const checkUpdateBtn = document.getElementById('check-update-btn') as HTMLButtonElement
 const updateStatus = document.getElementById('update-status') as HTMLDivElement
 
-// Initialize
 window.addEventListener('DOMContentLoaded', async () => {
     try {
         const isReady = await (window as any).electron.ipcRenderer.invoke('check-csharp-backend')
@@ -92,7 +89,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         backendStatus.textContent = 'Error ⚠️'
     }
 
-    // Load current version
     try {
         const version = await (window as any).electron.ipcRenderer.invoke('get-app-version')
         const versionEl = document.getElementById('current-version')
@@ -101,12 +97,144 @@ window.addEventListener('DOMContentLoaded', async () => {
         console.error('Failed to load version:', err)
     }
 
-    // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'dark'
     applyTheme(savedTheme)
+
+    setupZoom()
+    setupLogTypeSelector()
+    setupStatCardFilters()
+    loadChangelog()
 })
 
-// Theme Management
+let zoomTimeout: any = null
+let lastZoomTime = 0
+const ZOOM_THROTTLE = 150 // ms
+
+function applyZoom(zoom: number, immediate = false) {
+    const factor = zoom / 100
+    const zoomValue = document.getElementById('zoom-value')
+
+    if (zoomValue) zoomValue.textContent = `${zoom}%`
+
+    if (immediate) {
+        if (zoomTimeout) clearTimeout(zoomTimeout)
+            ; (window as any).electron.ipcRenderer.invoke('set-zoom', factor)
+        return
+    }
+
+    if (zoomTimeout) clearTimeout(zoomTimeout)
+    zoomTimeout = setTimeout(() => {
+        ; (window as any).electron.ipcRenderer.invoke('set-zoom', factor)
+    }, 50)
+}
+
+function setupZoom() {
+    const zoomInBtn = document.getElementById('zoom-in-btn') as HTMLButtonElement
+    const zoomOutBtn = document.getElementById('zoom-out-btn') as HTMLButtonElement
+    const savedZoom = parseInt(localStorage.getItem('zoomLevel') || '100')
+
+    applyZoom(savedZoom, true)
+
+    const changeZoom = (delta: number) => {
+        const now = Date.now()
+        if (now - lastZoomTime < ZOOM_THROTTLE) return
+
+        lastZoomTime = now
+        const currentZoom = parseInt(localStorage.getItem('zoomLevel') || '100')
+        const newZoom = Math.min(200, Math.max(50, currentZoom + delta))
+
+        localStorage.setItem('zoomLevel', newZoom.toString())
+        applyZoom(newZoom)
+    }
+
+    zoomInBtn?.addEventListener('click', () => changeZoom(10))
+    zoomOutBtn?.addEventListener('click', () => changeZoom(-10))
+
+    // Mouse wheel zoom (Ctrl + Wheel)
+    window.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            changeZoom(e.deltaY > 0 ? -10 : 10)
+        }
+    }, { passive: false })
+
+    // Shortcuts (Ctrl + Plus/Minus/Zero)
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === '=' || e.key === '+') {
+                e.preventDefault()
+                changeZoom(10)
+            } else if (e.key === '-') {
+                e.preventDefault()
+                changeZoom(-10)
+            } else if (e.key === '0') {
+                e.preventDefault()
+                localStorage.setItem('zoomLevel', '100')
+                applyZoom(100, true)
+            }
+        }
+    })
+}
+
+async function loadChangelog() {
+    try {
+        const changelogPath = await (window as any).electron.ipcRenderer.invoke('get-changelog-path')
+        const response = await fetch(`file:///${changelogPath}`)
+        const markdown = await response.text()
+
+        const changelogContent = document.getElementById('changelog-content')
+        if (changelogContent) {
+            changelogContent.innerHTML = renderMarkdown(markdown)
+        }
+    } catch (error) {
+        console.error('Failed to load changelog:', error)
+        const changelogContent = document.getElementById('changelog-content')
+        if (changelogContent) {
+            changelogContent.innerHTML = '<p style="color: var(--error);">Failed to load changelog</p>'
+        }
+    }
+}
+
+function renderMarkdown(markdown: string): string {
+    let html = markdown
+        .replace(/^### (.+)$/gm, '<h4 style="color: var(--accent-primary); margin-top: 16px; margin-bottom: 8px;">$1</h4>')
+        .replace(/^## (.+)$/gm, '<h3 style="color: var(--text-main); font-weight: 600; margin-top: 24px; margin-bottom: 12px; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px;">$1</h3>')
+        .replace(/^# (.+)$/gm, '<h2 style="color: var(--accent-primary); font-size: 24px; margin-bottom: 16px;">$1</h2>')
+        .replace(/^\- (.+)$/gm, '<li style="margin-left: 20px; margin-bottom: 4px;">$1</li>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid var(--border-glass); margin: 24px 0;">')
+        .replace(/\n\n/g, '</p><p style="margin-top: 8px;">')
+
+    return `<p style="margin-top: 8px;">${html}</p>`
+}
+
+function setupStatCardFilters() {
+    const statCards = document.querySelectorAll('.stat-card.clickable')
+
+    statCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const filterValue = (card as HTMLElement).dataset.filter || 'ALL'
+            levelFilter.value = filterValue
+            applyFilters()
+        })
+    })
+}
+
+function setupLogTypeSelector() {
+    const logTypeButtons = document.querySelectorAll('.log-type-btn')
+
+    logTypeButtons.forEach(btn => {
+        if (!btn.classList.contains('disabled')) {
+            btn.addEventListener('click', () => {
+                logTypeButtons.forEach(b => b.classList.remove('active'))
+                btn.classList.add('active')
+                selectedLogType = (btn as HTMLElement).dataset.type || 'Installation'
+                console.log('Selected log type:', selectedLogType)
+            })
+        }
+    })
+}
+
 themeToggle.addEventListener('change', () => {
     const newTheme = themeToggle.checked ? 'light' : 'dark'
     applyTheme(newTheme)
@@ -125,8 +253,6 @@ function applyTheme(theme: string) {
     }
 }
 
-// Auto-Update
-// Auto-Update Events
 window.addEventListener('DOMContentLoaded', () => {
     const ipc = (window as any).electron.ipcRenderer
 
@@ -163,7 +289,6 @@ window.addEventListener('DOMContentLoaded', () => {
     })
 })
 
-// Manual Check (Optional)
 checkUpdateBtn.addEventListener('click', async () => {
     checkUpdateBtn.disabled = true
     checkUpdateBtn.innerHTML = '<span>⏳</span> Checking...'
@@ -172,7 +297,6 @@ checkUpdateBtn.addEventListener('click', async () => {
         const result = await (window as any).electron.ipcRenderer.invoke('check-for-updates')
 
         if (result.fallbackStarted) {
-            // Do nothing, wait for events
             console.log('Fallback update mechanism triggered')
         } else if (!result.available) {
             updateStatus.style.display = 'block'
@@ -185,26 +309,27 @@ checkUpdateBtn.addEventListener('click', async () => {
     }
 })
 
-// Navigation
 navLogs.addEventListener('click', () => switchView('logs'))
 navAnalytics.addEventListener('click', () => switchView('analytics'))
+navChangelog.addEventListener('click', () => switchView('changelog'))
 navSettings.addEventListener('click', () => switchView('settings'))
 
-async function switchView(view: 'logs' | 'analytics' | 'settings') {
-    // Reset all nav items
+async function switchView(view: 'logs' | 'analytics' | 'changelog' | 'settings') {
     navLogs.classList.remove('active')
     navAnalytics.classList.remove('active')
+    navChangelog.classList.remove('active')
     navSettings.classList.remove('active')
 
-    // Hide all views
     logViewer.style.display = 'none'
     statsGrid.style.display = 'none'
     analysisDashboard.style.display = 'none'
+    changelogDashboard.style.display = 'none'
     settingsDashboard.style.display = 'none'
+    logTypeSection.style.display = 'none'
 
     if (view === 'analytics' && !currentFilePath) {
         alert('Please open a log file first!')
-        switchView('logs') // Fall back to logs
+        switchView('logs')
         return
     }
 
@@ -213,16 +338,21 @@ async function switchView(view: 'logs' | 'analytics' | 'settings') {
         mainTitle.textContent = 'Dashboard'
         logViewer.style.display = 'flex'
         statsGrid.style.display = 'grid'
+        logTypeSection.style.display = 'block'
     } else if (view === 'analytics') {
         navAnalytics.classList.add('active')
         mainTitle.textContent = 'System Analysis'
         analysisDashboard.style.display = 'flex'
         try {
-            const analysis: AnalysisResult = await (window as any).electron.ipcRenderer.invoke('analyze-log-csharp', currentFilePath)
+            const analysis: AnalysisResult = await (window as any).electron.ipcRenderer.invoke('analyze-log-csharp', currentFilePath, selectedLogType)
             renderDashboard(analysis)
         } catch (err) {
             console.error('Analysis failed', err)
         }
+    } else if (view === 'changelog') {
+        navChangelog.classList.add('active')
+        mainTitle.textContent = 'Changelog'
+        changelogDashboard.style.display = 'flex'
     } else if (view === 'settings') {
         navSettings.classList.add('active')
         mainTitle.textContent = 'Settings'
@@ -279,7 +409,7 @@ selectFileBtn.addEventListener('click', async () => {
             fileInfo.textContent = result.split('/').pop() || result
             selectFileBtn.innerHTML = '<span>⏳</span> Parsing...'
 
-            const data: ParseResult = await (window as any).electron.ipcRenderer.invoke('parse-log-csharp', result)
+            const data: ParseResult = await (window as any).electron.ipcRenderer.invoke('parse-log-csharp', result, selectedLogType)
             allEntries = data.entries.map((e, idx) => ({ ...e, id: idx }))
             updateStats(data.statistics)
             applyFilters()
@@ -315,12 +445,12 @@ function updateStats(stats: any) {
 
 function renderTable(entries: LogEntry[]) {
     logBody.innerHTML = ''
-    entries.slice(0, 500).forEach(entry => {
+    entries.slice(0, 10000).forEach(entry => {
         const row = document.createElement('tr')
         row.className = 'log-row'
         row.onclick = () => showDetails(entry)
         row.innerHTML = `
-            <td class="timestamp">${new Date(entry.timestamp).toLocaleTimeString()}</td>
+            <td class="timestamp">${formatTimestamp(entry.timestamp)}</td>
             <td><span class="level-tag level-${entry.level.toLowerCase()}">${entry.level}</span></td>
             <td class="message">${escapeHtml(entry.message)}</td>
         `
@@ -329,14 +459,67 @@ function renderTable(entries: LogEntry[]) {
 }
 
 function showDetails(entry: LogEntry) {
+    const hasStackTrace = entry.stackTrace && entry.stackTrace.trim().length > 0
+
     modalDetails.innerHTML = `
         <div class="detail-row"><span class="detail-label">Level</span><span class="level-tag level-${entry.level.toLowerCase()}">${entry.level}</span></div>
-        <div class="detail-row"><span class="detail-label">Time</span><span>${entry.timestamp}</span></div>
+        <div class="detail-row"><span class="detail-label">Time</span><span>${formatTimestamp(entry.timestamp)}</span></div>
+        <div class="detail-row"><span class="detail-label">Line</span><span>#${entry.lineNumber || 'N/A'}</span></div>
+        
+        ${hasStackTrace ? `
+        <div class="modal-tabs">
+            <button class="modal-tab active" data-tab="message">Message</button>
+            <button class="modal-tab" data-tab="stacktrace">Stack Trace</button>
+        </div>
+        
+        <div class="modal-tab-content" id="tab-message">
+            <div class="code-block">${escapeHtml(entry.message)}</div>
+        </div>
+        
+        <div class="modal-tab-content" id="tab-stacktrace" style="display: none;">
+            <div class="code-block">${escapeHtml(entry.stackTrace || '')}</div>
+        </div>
+        ` : `
         <div class="detail-row"><span class="detail-label">Message</span><div class="code-block">${escapeHtml(entry.message)}</div></div>
-        ${entry.stackTrace ? `<div class="detail-row"><span class="detail-label">Stack</span><div class="code-block">${escapeHtml(entry.stackTrace)}</div></div>` : ''}
+        `}
     `
+
+    if (hasStackTrace) {
+        const tabs = modalDetails.querySelectorAll('.modal-tab')
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = (tab as HTMLElement).dataset.tab
+
+                tabs.forEach(t => t.classList.remove('active'))
+                tab.classList.add('active')
+
+                const contents = modalDetails.querySelectorAll('.modal-tab-content')
+                contents.forEach(content => {
+                    if (content.id === `tab-${tabName}`) {
+                        (content as HTMLElement).style.display = 'block'
+                    } else {
+                        (content as HTMLElement).style.display = 'none'
+                    }
+                })
+            })
+        })
+    }
+
     modalOverlay.classList.add('active')
 }
 
+
 closeModal.onclick = () => modalOverlay.classList.remove('active')
+
+function formatTimestamp(timestamp: string): string {
+    const date = new Date(timestamp)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
 function escapeHtml(t: string) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }

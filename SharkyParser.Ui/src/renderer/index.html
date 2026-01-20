@@ -20,8 +20,30 @@
                 <div class="nav-item active" id="nav-logs">
                     <span>📂</span> Logs
                 </div>
+
+                <div style="margin-left: 20px; margin-top: 8px; display: none;" id="log-type-section">
+                    <div
+                        style="padding: 0 20px; margin-bottom: 8px; font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Parser Type
+                    </div>
+                    <div class="log-type-buttons" style="padding: 0 10px;">
+                        <button class="log-type-btn active" data-type="Installation">
+                            <span>📦</span> Installation
+                        </button>
+                        <button class="log-type-btn disabled" data-type="Update" title="In development - Coming soon">
+                            <span>🔄</span> Update
+                        </button>
+                        <button class="log-type-btn disabled" data-type="IIS" title="In development - Coming soon">
+                            <span>🌐</span> IIS
+                        </button>
+                    </div>
+                </div>
+
                 <div class="nav-item" id="nav-analytics">
                     <span>📊</span> Analytics
+                </div>
+                <div class="nav-item" id="nav-changelog">
+                    <span>📝</span> Changelog
                 </div>
                 <div class="nav-item" id="nav-settings">
                     <span>⚙️</span> Settings
@@ -46,19 +68,19 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card total">
+                <div class="stat-card total clickable" data-filter="ALL">
                     <span class="stat-label">Total Entries</span>
                     <span class="stat-value" id="stat-total">0</span>
                 </div>
-                <div class="stat-card error">
+                <div class="stat-card error clickable" data-filter="ERROR">
                     <span class="stat-label">Errors</span>
                     <span class="stat-value" id="stat-errors">0</span>
                 </div>
-                <div class="stat-card warning">
+                <div class="stat-card warning clickable" data-filter="WARN">
                     <span class="stat-label">Warnings</span>
                     <span class="stat-value" id="stat-warnings">0</span>
                 </div>
-                <div class="stat-card info">
+                <div class="stat-card info clickable" data-filter="INFO">
                     <span class="stat-label">Info logs</span>
                     <span class="stat-value" id="stat-info">0</span>
                 </div>
@@ -148,6 +170,23 @@
                                 </div>
                             </label>
                         </div>
+
+                        <div style="margin-top: 24px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-size: 14px;">Zoom Level</span>
+                                <span style="font-size: 14px; color: var(--accent-primary); font-weight: 600;"
+                                    id="zoom-value">100%</span>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="update-btn" id="zoom-out-btn" style="flex: 1; justify-content: center;">
+                                    <span>➖</span> Zoom Out
+                                </button>
+                                <button class="update-btn" id="zoom-in-btn" style="flex: 1; justify-content: center;">
+                                    <span>➕</span> Zoom In
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="dash-card">
@@ -171,14 +210,26 @@
                     </div>
                 </div>
 
+                <div style="margin-top: auto; padding-top: 40px; border-top: 1px solid var(--border-glass);">
+                    <div class="dash-card">
+                        <h3 style="font-family: 'Outfit', sans-serif;">About</h3>
+                        <div style="color: var(--text-dim); line-height: 1.6; font-size: 14px; margin-top: 12px;">
+                            <p><strong style="color: var(--accent-primary);">Sharky Parser PRO</strong> — Advanced Log
+                                Analysis System</p>
+                            <p style="margin-top: 8px;">Built with Electron, TypeScript, and C#. Designed for
+                                enterprise-level log parsing and analysis.</p>
+                            <p style="margin-top: 8px; font-size: 12px;">© 2026 Sharky Parser. All rights reserved.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Changelog View -->
+            <div class="changelog-dashboard" id="changelog-dashboard">
                 <div class="dash-card">
-                    <h3 style="font-family: 'Outfit', sans-serif;">About</h3>
-                    <div style="color: var(--text-dim); line-height: 1.6; font-size: 14px; margin-top: 12px;">
-                        <p><strong style="color: var(--accent-primary);">Sharky Parser PRO</strong> — Advanced Log
-                            Analysis System</p>
-                        <p style="margin-top: 8px;">Built with Electron, TypeScript, and C#. Designed for
-                            enterprise-level log parsing and analysis.</p>
-                        <p style="margin-top: 8px; font-size: 12px;">© 2026 Sharky Parser. All rights reserved.</p>
+                    <h2 style="font-family: 'Outfit', sans-serif; margin-bottom: 20px;">📝 Version History</h2>
+                    <div id="changelog-content" style="color: var(--text-dim); line-height: 1.8; font-size: 14px;">
+                        Loading changelog...
                     </div>
                 </div>
             </div>

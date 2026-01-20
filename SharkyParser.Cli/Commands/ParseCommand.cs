@@ -1,18 +1,25 @@
 using System.ComponentModel;
 using System.Text;
+using SharkyParser.Core;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Enums;
+using SharkyParser.Core.Parsers;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Commands;
 
-public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Settings>
+public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<ParseCommand.Settings>
 {
     public class Settings : CommandSettings
     {
         [CommandArgument(0, "<path>")]
         [Description("Path to the log file to parse")]
         public string Path { get; set; } = string.Empty;
+        
+        [CommandOption("-t|--type")]
+        [Description("REQUIRED: Log type - Installation, Update, Rabbit, IIS")]
+        public string? LogTypeString { get; set; }
 
         [CommandOption("--embedded")]
         [Description("Output in pipe-delimited format for embedded use (fastest)")]
@@ -22,9 +29,31 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
         [Description("Filter by log level (error, warn, info, debug)")]
         public string? Filter { get; set; }
     }
-
+    
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
+        
+        if (string.IsNullOrEmpty(settings.LogTypeString))
+        {
+            AnsiConsole.MarkupLine("[red]Error: Log type is required. Use --type option.[/]");
+            AnsiConsole.MarkupLine("[grey]Available types: installation, update, rabbit, iis[/]");
+            return 1;
+        }
+        
+        if (!Enum.TryParse<LogType>(settings.LogTypeString, true, out var logType))
+        {
+            AnsiConsole.MarkupLine($"[red]Error: Invalid log type '{settings.LogTypeString}'.[/]");
+            AnsiConsole.MarkupLine("[grey]Available types: installation, update, rabbit, iis[/]");
+            return 1;
+        }
+
+        StackTraceMode stackTraceMode = StackTraceMode.AllToStackTrace;
+        if (logType == LogType.Installation && !settings.Embedded)
+        {
+            stackTraceMode = PromptStackTraceMode();
+        }
+
+
         if (!File.Exists(settings.Path))
         {
             if (settings.Embedded)
@@ -34,50 +63,72 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
             return 1;
         }
 
-        var logs = parser.ParseFile(settings.Path).ToList();
-
-        // Apply filter if specified
-        if (!string.IsNullOrWhiteSpace(settings.Filter))
+        try
         {
-            var filterLevel = settings.Filter.ToUpperInvariant();
-            logs = logs.Where(l => l.Level.Equals(filterLevel, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            if (logs.Count == 0 && !settings.Embedded)
+            var parser = parserFactory.CreateParser(logType, stackTraceMode);
+            var allLogs = parser.ParseFile(settings.Path).ToList();
+            var totalEntries = allLogs.Count;
+            
+            var logs = allLogs;
+            if (!string.IsNullOrWhiteSpace(settings.Filter))
             {
-                AnsiConsole.MarkupLine($"[yellow]No logs found with level: {settings.Filter}[/]");
-                return 0;
+                var filterLevel = settings.Filter.ToUpperInvariant();
+                logs = logs.Where(l => l.Level.Equals(filterLevel, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            if (settings.Embedded)
+            {
+                OutputEmbeddedFormat(logs, parser, totalEntries); 
+            }
+            else
+            {
+                OutputTableFormat(logs, parser, totalEntries);
             }
         }
-
-        // Embedded format (pipe-delimited) - fastest for IPC
-        if (settings.Embedded)
+        catch (Exception ex)
         {
-            OutputEmbeddedFormat(logs);
-            return 0;
+            if (settings.Embedded)
+                Console.WriteLine($"ERROR|Parser error: {ex.Message}");
+            else
+                AnsiConsole.MarkupLine($"[red]Parser error: {ex.Message}[/]");
+            return 1;
         }
 
-        // Table format (default)
-        OutputTableFormat(logs);
         return 0;
     }
 
-    private static void OutputEmbeddedFormat(List<SharkyParser.Core.LogEntry> logs)
+    private static StackTraceMode PromptStackTraceMode()
     {
-        // Statistics line first
-        var stats = new StringBuilder();
-        stats.Append("STATS|");
-        stats.Append(logs.Count);
-        stats.Append('|');
-        stats.Append(logs.Count(l => l.Level == "ERROR"));
-        stats.Append('|');
-        stats.Append(logs.Count(l => l.Level == "WARN"));
-        stats.Append('|');
-        stats.Append(logs.Count(l => l.Level == "INFO"));
-        stats.Append('|');
-        stats.Append(logs.Count(l => l.Level == "DEBUG"));
-        Console.WriteLine(stats.ToString());
+        AnsiConsole.MarkupLine("[blue]Choose stack trace parsing mode:[/]");
 
-        // Entry lines
+        var mode = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("How should stack traces be handled?")
+                .PageSize(10)
+                .AddChoices(new[] {
+                    "All lines after timestamp go to stack trace",
+                    "No stack traces - all in message"
+                }));
+
+        return mode switch
+        {
+            "All lines after timestamp go to stack trace" => StackTraceMode.AllToStackTrace,
+            "No stack traces - all in message" => StackTraceMode.NoStackTrace,
+            _ => StackTraceMode.AllToStackTrace
+        };
+    }
+    
+    private static void OutputEmbeddedFormat(List<LogEntry> logs, ILogParser parser, int totalEntries)
+    {
+        // Calculate statistics by level
+        var errors = logs.Count(l => l.Level.Equals("ERROR", StringComparison.OrdinalIgnoreCase));
+        var warnings = logs.Count(l => l.Level.Equals("WARN", StringComparison.OrdinalIgnoreCase) || l.Level.Equals("WARNING", StringComparison.OrdinalIgnoreCase));
+        var info = logs.Count(l => l.Level.Equals("INFO", StringComparison.OrdinalIgnoreCase));
+        var debug = logs.Count(l => l.Level.Equals("DEBUG", StringComparison.OrdinalIgnoreCase) || l.Level.Equals("TRACE", StringComparison.OrdinalIgnoreCase));
+        
+        // Statistics line: STATS|total|errors|warnings|info|debug
+        Console.WriteLine($"STATS|{totalEntries}|{errors}|{warnings}|{info}|{debug}");
+
         foreach (var log in logs)
         {
             var line = new StringBuilder();
@@ -101,14 +152,17 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
         }
     }
 
-    private static string EscapePipe(string? value)
+    private static void OutputTableFormat(List<LogEntry> logs, ILogParser parser, int totalEntries)
     {
-        if (string.IsNullOrEmpty(value)) return "";
-        return value.Replace("|", "\\|").Replace("\n", "\\n").Replace("\r", "");
-    }
+        AnsiConsole.MarkupLine($"[blue]Parser:[/] {parser.ParserName} ({parser.SupportedLogType})");
+        if (parser is InstallationLogParser installationParser)
+        {
+            AnsiConsole.MarkupLine($"[blue]Stack Trace Mode:[/] {installationParser.StackTraceMode}");
+        }
+        AnsiConsole.MarkupLine($"[blue]All entries:[/] {totalEntries}");
+        AnsiConsole.MarkupLine($"[blue]Filtered entries:[/] {logs.Count}");
+        AnsiConsole.WriteLine();
 
-    private static void OutputTableFormat(List<SharkyParser.Core.LogEntry> logs)
-    {
         var table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("[blue]Timestamp[/]")
@@ -133,5 +187,11 @@ public sealed class ParseCommand(ILogParser parser) : Command<ParseCommand.Setti
         }
 
         AnsiConsole.Write(table);
+    }
+
+    private static string EscapePipe(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        return value.Replace("|", "\\|").Replace("\n", "\\n").Replace("\r", "");
     }
 }

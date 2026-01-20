@@ -2,7 +2,9 @@
 using SharkyParser.Cli.Infrastructure;
 using SharkyParser.Cli.PreCheck;
 using SharkyParser.Core;
+using SharkyParser.Core.Infrastructure;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Parsers;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli;
@@ -30,7 +32,12 @@ public static class Program
     {
         var services = new ServiceCollection();
         
-        services.AddSingleton<ILogParser, LogParser>();
+        services.AddTransient<InstallationLogParser>();
+        services.AddSingleton<ILogParserRegistry, LogParserRegistry>();
+        services.AddSingleton<ILogParserFactory, LogParserFactory>();
+        services.AddTransient<UpdateLogParser>();
+        /*services.AddTransient<RabbitLogParser>();*/
+        services.AddTransient<IISLogParser>();
         services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
         
         services.AddSingleton<IAppLogger, AppFileLogger>(); 

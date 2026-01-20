@@ -217,13 +217,28 @@ app.whenReady().then(async () => {
         return app.getVersion()
     })
 
+    ipcMain.handle('get-changelog-path', () => {
+        const isDev = !app.isPackaged
+        if (isDev) {
+            return path.join(app.getAppPath(), '..', 'Changelog.md')
+        }
+        return path.join(process.resourcesPath, 'Changelog.md')
+    })
 
-    ipcMain.handle('parse-log-csharp', async (_, filePath: string) => {
+    ipcMain.handle('set-zoom', (_, factor: number) => {
+        if (mainWindow) {
+            mainWindow.webContents.setZoomFactor(factor)
+        }
+    })
+
+
+    ipcMain.handle('parse-log-csharp', async (_, filePath: string, logType: string = 'Installation') => {
         const sharkyPath = findSharky()
         return new Promise((resolve, reject) => {
             let output = ''
-            const proc = spawn(sharkyPath, ['parse', filePath, '--embedded'])
+            const proc = spawn(sharkyPath, ['parse', filePath, '--type', logType, '--embedded'])
             proc.stdout.on('data', (data) => output += data.toString())
+            proc.stderr.on('data', (data) => console.error('CLI stderr:', data.toString()))
             proc.on('close', (code) => {
                 if (code === 0) resolve(parseEmbeddedOutput(output))
                 else reject(new Error(`Exit code ${code}`))
@@ -231,12 +246,13 @@ app.whenReady().then(async () => {
         })
     })
 
-    ipcMain.handle('analyze-log-csharp', async (_, filePath: string) => {
+    ipcMain.handle('analyze-log-csharp', async (_, filePath: string, logType: string = 'Installation') => {
         const sharkyPath = findSharky()
         return new Promise((resolve, reject) => {
             let output = ''
-            const proc = spawn(sharkyPath, ['analyze', filePath, '--embedded'])
+            const proc = spawn(sharkyPath, ['analyze', filePath, '--type', logType, '--embedded'])
             proc.stdout.on('data', (data) => output += data.toString())
+            proc.stderr.on('data', (data) => console.error('CLI stderr:', data.toString()))
             proc.on('close', (code) => {
                 if (code === 0) {
                     const line = output.trim().split('\n').find(l => l.startsWith('ANALYSIS|'))
