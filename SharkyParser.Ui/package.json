@@ -1,6 +1,6 @@
 {
     "name": "log-parser",
-    "version": "1.1.6",
+    "version": "1.1.8",
     "description": "Cross-platform Sharky parser with C# backend and Electron UI",
     "type": "module",
     "main": "out/main/index.js",
@@ -47,7 +47,23 @@
         "appId": "com.sharkyparser.app",
         "productName": "SharkyParser",
         "copyright": "Copyright © 2026 OGTech",
-        "icon": "resources/icon.ico",
+        "icon": "resources/icon.png",
+        "linux": {
+            "target": "AppImage",
+            "category": "Utility",
+            "maintainer": "Orkhan Gojayev <orkhan@ogtech.me>",
+            "executableName": "SharkyParser",
+            "extraResources": [
+                {
+                    "from": "dotnet-linux",
+                    "to": "dotnet",
+                    "filter": [
+                        "**/*",
+                        "!*.pdb"
+                    ]
+                }
+            ]
+        },
         "directories": {
             "output": "dist"
         },
@@ -63,6 +79,7 @@
         ],
         "win": {
             "target": "nsis",
+            "icon": "resources/icon.ico",
             "legalTrademarks": "SharkyParser",
             "verifyUpdateCodeSignature": false,
             "extraResources": [
@@ -82,19 +99,6 @@
             "extraResources": [
                 {
                     "from": "dotnet",
-                    "to": "dotnet",
-                    "filter": [
-                        "**/*",
-                        "!*.pdb"
-                    ]
-                }
-            ]
-        },
-        "linux": {
-            "target": "AppImage",
-            "extraResources": [
-                {
-                    "from": "dotnet-linux",
                     "to": "dotnet",
                     "filter": [
                         "**/*",

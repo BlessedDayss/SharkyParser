@@ -287,6 +287,12 @@ window.addEventListener('DOMContentLoaded', () => {
         updateStatus.style.display = 'block'
         updateStatus.innerHTML = `<div style="color: var(--error);">❌ Update Error: ${err}</div>`
     })
+
+    ipc.on('update-not-available', () => {
+        updateStatus.style.display = 'block'
+        updateStatus.innerHTML = '<div style="color: var(--success);">✅ You are on the latest version</div>'
+        setTimeout(() => { updateStatus.style.display = 'none' }, 5000)
+    })
 })
 
 checkUpdateBtn.addEventListener('click', async () => {

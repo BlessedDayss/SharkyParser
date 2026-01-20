@@ -359,6 +359,10 @@ function setupAutoUpdater() {
         autoUpdater.forceDevUpdateConfig = true
     }
 
+    // Configure AutoUpdater Noise Reduction
+    autoUpdater.autoDownload = false
+    autoUpdater.logger = null // Stop default console spam as we handle errors ourselves
+
     // For GitHub releases
     autoUpdater.setFeedURL({
         provider: 'github',
@@ -392,20 +396,47 @@ function setupAutoUpdater() {
     })
 
     // Install and restart
-    ipcMain.handle('install-update', () => {
+    ipcMain.handle('install-update', async () => {
         if (manualDownloadPath) {
-            shell.openPath(manualDownloadPath)
-            setTimeout(() => app.quit(), 1000)
+            const isWin = process.platform === 'win32'
+            console.log(`🚀 Launching Installer: ${manualDownloadPath}`)
+
+            if (isWin && manualDownloadPath.endsWith('.exe')) {
+                // For Windows: Run installer normally so users see the progress/UAC prompt
+                const { spawn } = await import('child_process')
+
+                // We launch it detached and immediately exit our app
+                // This allows the installer to "replace" the files of the closed app
+                const child = spawn(`"${manualDownloadPath}"`, [], {
+                    detached: true,
+                    stdio: 'ignore',
+                    shell: true
+                })
+                child.unref()
+
+                console.log('🏁 Terminating app for update...')
+                setTimeout(() => app.exit(0), 500)
+            } else {
+                // For Mac/Linux, open the DMG/AppImage
+                await shell.openPath(manualDownloadPath)
+                app.exit(0)
+            }
         } else {
+            console.log('🚀 Using native quitAndInstall...')
             autoUpdater.quitAndInstall(false, true)
         }
     })
 
     autoUpdater.on('error', async (err) => {
-        console.error('❌ Update error:', err)
+        // Silence noisy 404/metadata errors as they are expected for some release types
+        const isExpectedError = err.message && (
+            err.message.includes('latest-mac.yml') ||
+            err.message.includes('latest.yml') ||
+            err.message.includes('404') ||
+            err.message.includes('ENOENT')
+        )
 
-        // Smart Fallback: Download manually if metadata is missing (e.g. no latest-mac.yml)
-        if (err.message.includes('latest-mac.yml') || err.message.includes('404') || err.message.includes('ENOENT')) {
+        if (isExpectedError) {
             console.log('⚠️ Standard mechanism failed, switching to Smart Native Download...')
             try {
                 await startSmartDownload(mainWindow)
@@ -416,6 +447,7 @@ function setupAutoUpdater() {
             return
         }
 
+        console.error('❌ Update error:', err)
         mainWindow?.webContents.send('update-error', err.message)
     })
 
@@ -428,11 +460,20 @@ function setupAutoUpdater() {
                 version: result?.updateInfo.version || null
             }
         } catch (error: any) {
-            // If fallback mechanism handles this, don't report error to UI
-            if (error.message && (error.message.includes('latest-mac.yml') || error.message.includes('404') || error.message.includes('ENOENT'))) {
-                console.log('⚠️ Update check error swallowed (Smart Download active)')
+            // Silence noisy 404 errors as they are expected for old releases without latest.yml
+            const isMissingMetadata = error.message && (
+                error.message.includes('latest-mac.yml') ||
+                error.message.includes('latest.yml') ||
+                error.message.includes('404') ||
+                error.message.includes('ENOENT')
+            )
+
+            if (isMissingMetadata) {
+                console.log('⚠️ Standard Update info not found. Starting Smart Fallback...')
+                await startSmartDownload(mainWindow)
                 return { available: false, fallbackStarted: true }
             }
+
             console.error('Update check failed:', error)
             return { available: false, error: String(error) }
         }
@@ -441,108 +482,153 @@ function setupAutoUpdater() {
 
 // Global variable to store manually downloaded update path
 let manualDownloadPath: string | null = null
+let isSmartDownloading = false
+
+/**
+ * Handles cross-platform version comparison
+ * Returns true if remote version > local version
+ */
+function isNewer(remote: string, local: string): boolean {
+    const r = remote.replace(/^v/, '').split('.').map(Number)
+    const l = local.replace(/^v/, '').split('.').map(Number)
+    for (let i = 0; i < 3; i++) {
+        if ((r[i] || 0) > (l[i] || 0)) return true
+        if ((r[i] || 0) < (l[i] || 0)) return false
+    }
+    return false
+}
+
+/**
+ * Robust download function with multi-level redirect support
+ */
+async function downloadWithRedirects(url: string, dest: string, onProgress: (percent: number) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(dest)
+        let totalBytes = 0
+        let receivedBytes = 0
+
+        const request = (currentUrl: string) => {
+            https.get(currentUrl, {
+                headers: { 'User-Agent': 'SharkyParser' }
+            }, (res) => {
+                // Handle Redirects (301, 302, 303, 307, 308)
+                if ([301, 302, 303, 307, 308].includes(res.statusCode || 0) && res.headers.location) {
+                    console.log('🔗 Redirecting to:', res.headers.location)
+                    request(res.headers.location)
+                    return
+                }
+
+                if (res.statusCode !== 200) {
+                    reject(new Error(`Server returned status code ${res.statusCode}`))
+                    return
+                }
+
+                totalBytes = parseInt(res.headers['content-length'] || '0', 10)
+                res.pipe(file)
+
+                res.on('data', (chunk) => {
+                    receivedBytes += chunk.length
+                    if (totalBytes > 0) {
+                        const percent = Math.round((receivedBytes / totalBytes) * 100)
+                        onProgress(percent)
+                    }
+                })
+
+                file.on('finish', () => {
+                    file.close()
+                    resolve()
+                })
+
+                file.on('error', (err) => {
+                    fs.unlink(dest, () => reject(err))
+                })
+            }).on('error', (err) => {
+                fs.unlink(dest, () => reject(err))
+            })
+        }
+
+        request(url)
+    })
+}
 
 async function startSmartDownload(win: BrowserWindow | null) {
-    // If win arg is null, try global mainWindow
-    if (!win) win = mainWindow
-
-    // If still null, wait for it (startup race condition)
-    if (!win) {
-        console.log('⏳ Smart Download: Waiting for main window to be ready...')
-        let attempts = 0
-        while (!mainWindow && attempts < 20) { // Wait up to 10s
-            await new Promise(r => setTimeout(r, 500))
-            attempts++
-        }
-        win = mainWindow
-        if (!win) {
-            console.error('❌ Smart Download: Main window never became ready')
-            return
-        }
+    if (isSmartDownloading) {
+        console.log('⏳ Smart Download already in progress, skipping...')
+        return
     }
 
+    if (!win) win = mainWindow
+    if (!win) return
+
+    isSmartDownloading = true
     console.log('🚀 Smart Download: Fetching releases from GitHub API...')
 
-    // 1. Fetch latest release info manually
-    const release = await new Promise<any>((resolve, reject) => {
-        const req = https.get({
-            hostname: 'api.github.com',
-            path: '/repos/BlessedDayss/SharkyParser/releases/latest',
-            headers: { 'User-Agent': 'SharkyParser' }
-        }, (res) => {
-            let data = ''
-            res.on('data', c => data += c)
-            res.on('end', () => {
-                try { resolve(JSON.parse(data)) } catch (e) { reject(e) }
+    try {
+        // 1. Fetch latest release info
+        const release = await new Promise<any>((resolve, reject) => {
+            const req = https.get({
+                hostname: 'api.github.com',
+                path: '/repos/BlessedDayss/SharkyParser/releases/latest',
+                headers: { 'User-Agent': 'SharkyParser' }
+            }, (res) => {
+                let data = ''
+                res.on('data', c => data += c)
+                res.on('end', () => {
+                    if (res.statusCode === 403) reject(new Error('GitHub API Rate Limit Exceeded. Try again later.'))
+                    else if (res.statusCode !== 200) reject(new Error(`GitHub API error: ${res.statusCode}`))
+                    else {
+                        try { resolve(JSON.parse(data)) } catch (e) { reject(e) }
+                    }
+                })
             })
+            req.on('error', reject)
         })
-        req.on('error', reject)
-    })
 
-    if (!release.tag_name) throw new Error('Failed to fetch release info')
+        if (!release.tag_name) throw new Error('No tag_name found in release')
 
-    // 2. Find correct asset
-    const isMac = process.platform === 'darwin'
-    const extension = isMac ? '.dmg' : '.exe'
-    const asset = release.assets.find((a: any) => a.name.endsWith(extension))
+        // 2. Version Check
+        const currentVersion = app.getVersion()
+        if (!isNewer(release.tag_name, currentVersion)) {
+            console.log(`✅ Version ${currentVersion} is current. Latest is ${release.tag_name}`)
+            manualDownloadPath = null
+            win.webContents.send('update-not-available')
+            return
+        }
 
-    if (!asset) throw new Error(`No ${extension} installer found in release`)
+        console.log(`✨ New version confirmed: ${release.tag_name} (Local: ${currentVersion})`)
 
-    // Notify UI: Update Available
-    win.webContents.send('update-available', release.tag_name)
-
-    // 3. Download
-    const tempPath = app.getPath('temp')
-    const filePath = path.join(tempPath, asset.name)
-    manualDownloadPath = filePath
-
-    const file = fs.createWriteStream(filePath)
-
-    await new Promise<void>((resolve, reject) => {
-        const req = https.get(asset.browser_download_url, {
-            headers: { 'User-Agent': 'SharkyParser' }
-        }, (res) => {
-            // Handle redirects (GitHub uses 302 for downloads)
-            if (res.statusCode === 302 && res.headers.location) {
-                https.get(res.headers.location, (redirectRes) => {
-                    const total = parseInt(redirectRes.headers['content-length'] || '0', 10)
-                    let current = 0
-
-                    redirectRes.pipe(file)
-
-                    redirectRes.on('data', (chunk) => {
-                        current += chunk.length
-                        if (total > 0) {
-                            const percent = Math.round((current / total) * 100)
-                            win.webContents.send('download-progress', percent)
-                        }
-                    })
-
-                    file.on('finish', () => {
-                        file.close()
-                        resolve()
-                    })
-                }).on('error', reject)
-                return
-            }
-
-            // Direct download (unlikely for GitHub releases but safe to handle)
-            const total = parseInt(res.headers['content-length'] || '0', 10)
-            let current = 0
-            res.pipe(file)
-
-            res.on('data', (chunk) => {
-                current += chunk.length
-                if (total > 0) {
-                    const percent = Math.round((current / total) * 100)
-                    win.webContents.send('download-progress', percent)
-                }
-            })
-            file.on('finish', () => { file.close(); resolve() })
+        // 3. Find correct asset
+        const isMac = process.platform === 'darwin'
+        const asset = release.assets.find((a: any) => {
+            const name = a.name.toLowerCase()
+            if (isMac) return name.endsWith('.dmg')
+            // For Windows, prefer Setup.exe or the largest .exe (avoiding blockmaps)
+            return name.endsWith('.exe') && !name.includes('blockmap')
         })
-        req.on('error', reject)
-    })
 
-    // 4. Notify Ready
-    win.webContents.send('update-downloaded', release.tag_name)
+        if (!asset) throw new Error(`Could not find a valid installer (.${isMac ? 'dmg' : 'exe'}) in release assets`)
+
+        // Notify UI: Update Available
+        win.webContents.send('update-available', release.tag_name)
+
+        // 4. Download
+        const tempPath = app.getPath('temp')
+        const filePath = path.join(tempPath, asset.name)
+        manualDownloadPath = filePath
+
+        await downloadWithRedirects(asset.browser_download_url, filePath, (percent) => {
+            win?.webContents.send('download-progress', percent)
+        })
+
+        // 5. Notify Ready
+        console.log('✅ Update downloaded to:', filePath)
+        win.webContents.send('update-downloaded', release.tag_name)
+
+    } catch (err: any) {
+        console.error('❌ Smart Download Failed:', err.message)
+        win.webContents.send('update-error', err.message)
+    } finally {
+        isSmartDownloading = false
+    }
 }
+

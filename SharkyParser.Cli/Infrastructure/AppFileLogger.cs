@@ -9,7 +9,11 @@ public class AppFileLogger : IAppLogger
     public AppFileLogger(string logPath = "Logs/AppLog.txt")
     {
         _logPath = logPath;
-        Directory.CreateDirectory(Path.GetDirectoryName(_logPath));
+        var directory = Path.GetDirectoryName(_logPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
     }
 
     public void LogAppStart(string[] args)

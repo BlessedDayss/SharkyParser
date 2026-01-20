@@ -9,9 +9,9 @@ public class LogParserConfiguration
 
     public class ParserConfig
     {
-        public string AssemblyName { get; set; }
-        public string TypeName { get; set; }
-        public bool Enabled { get; set; }
+        public string AssemblyName { get; set; } = string.Empty;
+        public string TypeName { get; set; } = string.Empty;
+        public bool Enabled { get; set; } = true;
         public Dictionary<string, object> Settings { get; set; } = new();
     }
 }
