@@ -70,17 +70,20 @@ jobs:
         echo "Updating to version: $VERSION"
         
         # Update .csproj using Node.js for cross-platform compatibility
+        # Using process.env to avoid shell interpolation issues inside the script
+        export VERSION
         node -e "
           const fs = require('fs');
           const path = 'SharkyParser.Cli/SharkyParser.Cli.csproj';
           let content = fs.readFileSync(path, 'utf8');
-          content = content.replace(/<Version>.*<\/Version>/, '<Version>$VERSION<\/Version>');
+          const version = process.env.VERSION;
+          content = content.replace(/<Version>.*<\/Version>/, '<Version>' + version + '</Version>');
           fs.writeFileSync(path, content);
         "
         
-        # Update package.json
+        # Update package.json - allow same version to prevent exit code 1
         cd SharkyParser.Ui
-        npm version $VERSION --no-git-tag-version
+        npm version $VERSION --no-git-tag-version --allow-same-version
 
     - name: Build and Pack NuGet (Ubuntu only)
       if: matrix.os == 'ubuntu-latest'
