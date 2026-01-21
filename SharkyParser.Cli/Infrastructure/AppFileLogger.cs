@@ -6,9 +6,19 @@ public class AppFileLogger : IAppLogger
 {
     private readonly string _logPath;
     
-    public AppFileLogger(string logPath = "Logs/AppLog.txt")
+    public AppFileLogger(string? logPath = null)
     {
-        _logPath = logPath;
+        if (string.IsNullOrEmpty(logPath))
+        {
+            var tempPath = Path.GetTempPath();
+            var logDir = Path.Combine(tempPath, "SharkyParser", "Logs");
+            _logPath = Path.Combine(logDir, "AppLog.txt");
+        }
+        else
+        {
+            _logPath = logPath;
+        }
+
         var directory = Path.GetDirectoryName(_logPath);
         if (!string.IsNullOrEmpty(directory))
         {

@@ -312,7 +312,14 @@
                                 <button class="update-btn" id="check-update-btn"><span>🔄</span> Check for
                                     Updates</button>
                             </div>
-                            <div id="update-status" style="font-size: 13px; color: var(--text-dim); display: none;">
+                            <div id="update-status"
+                                style="font-size: 13px; color: var(--text-dim); display: none; margin-bottom: 8px;">
+                            </div>
+                            <div id="update-progress-container"
+                                style="display: none; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
+                                <div id="update-progress-bar"
+                                    style="height: 100%; width: 0%; background: linear-gradient(90deg, #00f2ff, #7000ff); transition: width 0.3s ease;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -418,6 +425,28 @@
             <button id="close-analyze-modal"
                 style="margin-top: 20px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; text-decoration: underline; opacity: 0.7; transition: opacity 0.2s;">
                 Dismiss
+            </button>
+        </div>
+    </div>
+    <!-- Update Notification Modal -->
+    <div class="modal-overlay" id="update-notification-modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center; padding: 48px 40px;">
+            <div style="font-size: 64px; margin-bottom: 24px; filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.4));">🚀
+            </div>
+            <h3
+                style="font-family: 'Outfit', sans-serif; font-size: 28px; margin-bottom: 16px; color: white; font-weight: 700;">
+                New Version Available!</h3>
+            <p id="update-modal-text"
+                style="color: var(--text-dim); line-height: 1.6; margin-bottom: 32px; font-size: 16px;">
+                A new version of Sharky Parser is available. Update now to get the latest features and improvements.
+            </p>
+            <button class="primary-btn" id="update-now-btn"
+                style="width: 100%; justify-content: center; height: 52px; font-size: 16px; border-radius: 14px; margin-bottom: 12px;">
+                <span>✨</span> Update Now
+            </button>
+            <button id="skip-update-btn"
+                style="margin-top: 8px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; text-decoration: underline; opacity: 0.7; transition: opacity 0.2s;">
+                Skip for now
             </button>
         </div>
     </div>

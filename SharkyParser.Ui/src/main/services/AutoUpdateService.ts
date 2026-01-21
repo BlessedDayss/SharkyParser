@@ -25,16 +25,42 @@ export class AutoUpdateService {
         ipcMain.handle('check-for-updates', async () => {
             try {
                 const result = await autoUpdater.checkForUpdates()
+                const remoteVersion = result?.updateInfo?.version
+                const localVersion = app.getVersion()
+
+                const isNewer = remoteVersion && this.isNewer(remoteVersion, localVersion)
+
                 return {
-                    available: result?.updateInfo && result.updateInfo.version !== app.getVersion(),
-                    version: result?.updateInfo.version || null
+                    available: !!isNewer,
+                    version: remoteVersion || null
                 }
             } catch (error: any) {
                 if (this.isMissingMetadata(error)) {
-                    await this.startSmartDownload()
-                    return { available: false, fallbackStarted: true }
+                    try {
+                        const release = await this.fetchLatestRelease()
+                        const remoteVersion = release.tag_name
+                        const localVersion = app.getVersion()
+
+                        if (this.isNewer(remoteVersion, localVersion)) {
+                            return { available: false, fallbackStarted: true, version: remoteVersion }
+                        }
+                        return { available: false }
+                    } catch (e) {
+                        return { available: false, error: String(e) }
+                    }
                 }
                 return { available: false, error: String(error) }
+            }
+        })
+
+        ipcMain.on('download-update', async () => {
+            if (this.isSmartDownloading) return
+            try {
+                // If autoUpdater has the update, use it
+                await autoUpdater.downloadUpdate()
+            } catch (error: any) {
+                // Fallback to manual if autoUpdater fails
+                this.startSmartDownload()
             }
         })
 

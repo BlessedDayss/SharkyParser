@@ -1,6 +1,6 @@
 {
     "name": "log-parser",
-    "version": "1.1.9",
+    "version": "1.2.0",
     "description": "Cross-platform Sharky parser with C# backend and Electron UI",
     "type": "module",
     "main": "out/main/index.js",
@@ -48,6 +48,16 @@
         "productName": "SharkyParser",
         "copyright": "Copyright © 2026 OGTech",
         "icon": "resources/app_icon.png",
+        "extraResources": [
+            {
+                "from": "../Changelog.md",
+                "to": "Changelog.md"
+            },
+            {
+                "from": "resources",
+                "to": "assets"
+            }
+        ],
         "linux": {
             "target": "AppImage",
             "category": "Utility",
@@ -61,6 +71,10 @@
                         "**/*",
                         "!*.pdb"
                     ]
+                },
+                {
+                    "from": "../Changelog.md",
+                    "to": "Changelog.md"
                 }
             ]
         },
@@ -75,11 +89,12 @@
             "!node_modules/**/{README.md,CHANGELOG.md,README,readme.markdown,test,__tests__,tests,powered-test,example,examples,*.d.ts}",
             "!node_modules/.bin",
             "!**/*.map",
-            "!**/*.pdb"
+            "!**/*.pdb",
+            "resources/**/*"
         ],
         "win": {
             "target": "nsis",
-            "icon": "resources/icon.ico",
+            "icon": "resources/app_icon.png",
             "legalTrademarks": "SharkyParser",
             "verifyUpdateCodeSignature": false,
             "extraResources": [
@@ -90,6 +105,10 @@
                         "**/*",
                         "!*.pdb"
                     ]
+                },
+                {
+                    "from": "../Changelog.md",
+                    "to": "Changelog.md"
                 }
             ]
         },
@@ -104,6 +123,10 @@
                         "**/*",
                         "!*.pdb"
                     ]
+                },
+                {
+                    "from": "../Changelog.md",
+                    "to": "Changelog.md"
                 }
             ]
         },

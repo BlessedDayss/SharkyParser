@@ -15,8 +15,20 @@ export class WindowManager {
     }
 
     public createSplashScreen(): BrowserWindow {
-        const iconPath = path.join(this.resourcesPath, 'app_icon.png')
-        const icon = nativeImage.createFromPath(iconPath)
+        const pathsToTry = [
+            path.join(this.resourcesPath, 'app_icon.png'),
+            path.join(app.getAppPath(), 'resources', 'app_icon.png'),
+            path.join(process.resourcesPath, 'assets', 'app_icon.png'),
+            path.join(process.resourcesPath, 'app_icon.png')
+        ]
+
+        let icon = nativeImage.createEmpty()
+        for (const p of pathsToTry) {
+            if (require('fs').existsSync(p)) {
+                icon = nativeImage.createFromPath(p)
+                if (!icon.isEmpty()) break
+            }
+        }
 
         this.splashWindow = new BrowserWindow({
             width: 440,
@@ -57,12 +69,23 @@ export class WindowManager {
         })
 
         this.mainWindow.on('ready-to-show', () => {
+            console.log('Main window ready to show, closing splash');
             if (this.splashWindow) {
                 this.splashWindow.close()
                 this.splashWindow = null
             }
             this.mainWindow?.show()
         })
+
+        // Safety timeout: If main window doesn't show in 15s, force it
+        setTimeout(() => {
+            if (this.splashWindow) {
+                console.warn('Splash screen timeout reached. Forcing main window show.');
+                this.splashWindow.close()
+                this.splashWindow = null
+                this.mainWindow?.show()
+            }
+        }, 15000)
 
         this.mainWindow.webContents.setWindowOpenHandler((details) => {
             shell.openExternal(details.url)
