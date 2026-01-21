@@ -71,10 +71,6 @@
                         "**/*",
                         "!*.pdb"
                     ]
-                },
-                {
-                    "from": "../Changelog.md",
-                    "to": "Changelog.md"
                 }
             ]
         },
@@ -105,10 +101,6 @@
                         "**/*",
                         "!*.pdb"
                     ]
-                },
-                {
-                    "from": "../Changelog.md",
-                    "to": "Changelog.md"
                 }
             ]
         },
@@ -123,10 +115,6 @@
                         "**/*",
                         "!*.pdb"
                     ]
-                },
-                {
-                    "from": "../Changelog.md",
-                    "to": "Changelog.md"
                 }
             ]
         },
