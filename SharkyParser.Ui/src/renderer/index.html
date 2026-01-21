@@ -3,11 +3,53 @@
 
 <head>
     <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Sharky Parser Pro</title>
-    <!-- We'll import the CSS in main.ts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff",
+                        "secondary": "#7000ff",
+                        "background-dark": "#05060f",
+                        "surface-glass": "rgba(15, 17, 35, 0.7)",
+                        "surface-lighter": "#1a1d35",
+                        "danger": "#ff3333",
+                        "warning": "#ffaa00",
+                        "success": "#00ff88",
+                    },
+                    fontFamily: {
+                        "display": ["Outfit", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    backdropBlur: {
+                        'glass': '20px',
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 10px rgba(0, 242, 255, 0.3), 0 0 20px rgba(0, 242, 255, 0.1)',
+                        'neon-red': '0 0 15px rgba(255, 51, 51, 0.4)',
+                        'neon-orange': '0 0 15px rgba(255, 170, 0, 0.3)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    }
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="./src/style.css">
 </head>
 
-<body>
+<body class="bg-background-dark">
     <div class="app-container">
         <aside class="sidebar">
             <div class="logo-section">
@@ -18,10 +60,10 @@
 
             <nav class="sidebar-nav">
                 <div class="nav-item active" id="nav-logs">
-                    <span>📂</span> Logs
+                    <span class="material-symbols-outlined" style="font-size: 20px;">folder_open</span> Logs
                 </div>
 
-                <div style="margin-left: 20px; margin-top: 8px; display: none;" id="log-type-section">
+                <div style="margin-left: 20px; margin-top: 8px;" id="log-type-section">
                     <div
                         style="padding: 0 20px; margin-bottom: 8px; font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
                         Parser Type
@@ -36,17 +78,20 @@
                         <button class="log-type-btn disabled" data-type="IIS" title="In development - Coming soon">
                             <span>🌐</span> IIS
                         </button>
+                        <button class="log-type-btn disabled" data-type="RabbitMQ" title="In development - Coming soon">
+                            <span>🐰</span> RabbitMQ
+                        </button>
                     </div>
                 </div>
 
                 <div class="nav-item" id="nav-analytics">
-                    <span>📊</span> Analytics
+                    <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span> Analytics
                 </div>
                 <div class="nav-item" id="nav-changelog">
-                    <span>📝</span> Changelog
+                    <span class="material-symbols-outlined" style="font-size: 20px;">history</span> Changelog
                 </div>
                 <div class="nav-item" id="nav-settings">
-                    <span>⚙️</span> Settings
+                    <span class="material-symbols-outlined" style="font-size: 20px;">settings</span> Settings
                 </div>
             </nav>
 
@@ -62,100 +107,169 @@
         </aside>
 
         <main class="main-content">
-            <div class="header-row">
-                <h2 style="font-family: 'Outfit', sans-serif;">Dashboard</h2>
-                <div id="file-info" style="color: var(--text-dim); font-size: 12px;">No file selected</div>
-            </div>
+            <!-- Logs View -->
+            <div class="view-section active" id="logs-dashboard">
+                <div class="header-row">
+                    <h2 class="text-2xl font-display font-bold text-white tracking-tight">Log Explorer</h2>
+                    <div id="file-info" style="color: var(--text-dim); font-size: 12px;">No file selected</div>
+                </div>
 
-            <div class="stats-grid">
-                <div class="stat-card total clickable" data-filter="ALL">
-                    <span class="stat-label">Total Entries</span>
-                    <span class="stat-value" id="stat-total">0</span>
-                </div>
-                <div class="stat-card error clickable" data-filter="ERROR">
-                    <span class="stat-label">Errors</span>
-                    <span class="stat-value" id="stat-errors">0</span>
-                </div>
-                <div class="stat-card warning clickable" data-filter="WARN">
-                    <span class="stat-label">Warnings</span>
-                    <span class="stat-value" id="stat-warnings">0</span>
-                </div>
-                <div class="stat-card info clickable" data-filter="INFO">
-                    <span class="stat-label">Info logs</span>
-                    <span class="stat-value" id="stat-info">0</span>
-                </div>
-            </div>
-
-            <div class="log-viewer-container">
-                <div class="viewer-header">
-                    <input type="text" class="search-bar" id="search-input" placeholder="Search logs/messages..." />
-                    <div class="filter-group">
-                        <select id="level-filter"
-                            style="background: transparent; border: 1px solid var(--border-glass); color: white; padding: 6px 12px; border-radius: 8px;">
-                            <option value="ALL">All Levels</option>
-                            <option value="ERROR">Errors</option>
-                            <option value="WARN">Warnings</option>
-                            <option value="INFO">Information</option>
-                            <option value="DEBUG">Debug</option>
-                        </select>
+                <div class="stats-grid">
+                    <div class="stat-card total clickable" data-filter="ALL">
+                        <span class="stat-label">Total Entries</span>
+                        <span class="stat-value" id="stat-total">0</span>
+                    </div>
+                    <div class="stat-card error clickable" data-filter="ERROR">
+                        <span class="stat-label">Errors</span>
+                        <span class="stat-value" id="stat-errors">0</span>
+                    </div>
+                    <div class="stat-card warning clickable" data-filter="WARN">
+                        <span class="stat-label">Warnings</span>
+                        <span class="stat-value" id="stat-warnings">0</span>
+                    </div>
+                    <div class="stat-card info clickable" data-filter="INFO">
+                        <span class="stat-label">Info logs</span>
+                        <span class="stat-value" id="stat-info">0</span>
                     </div>
                 </div>
-                <div class="table-wrapper">
-                    <table class="log-table" id="log-table">
-                        <thead>
-                            <tr>
-                                <th width="180">Timestamp</th>
-                                <th width="100">Level</th>
-                                <th>Message</th>
-                            </tr>
-                        </thead>
-                        <tbody id="log-body">
-                            <!-- Rows will be injected here -->
-                        </tbody>
-                    </table>
+
+                <div class="log-viewer-container">
+                    <div class="viewer-header">
+                        <input type="text" class="search-bar" id="search-input" placeholder="Search logs/messages..." />
+                        <div class="filter-group">
+                            <select id="level-filter"
+                                style="background: transparent; border: 1px solid var(--border-glass); color: white; padding: 6px 12px; border-radius: 8px;">
+                                <option value="ALL">All Levels</option>
+                                <option value="ERROR">Errors</option>
+                                <option value="WARN">Warnings</option>
+                                <option value="INFO">Information</option>
+                                <option value="DEBUG">Debug</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="log-table" id="log-table">
+                            <thead>
+                                <tr>
+                                    <th width="180">Timestamp</th>
+                                    <th width="100">Level</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="log-body">
+                                <!-- Rows will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <!-- Dashboard View -->
-            <div class="analysis-dashboard" id="analysis-dashboard">
-                <div class="dashboard-row">
+
+            <!-- Analytics Dashboard View -->
+            <div class="view-section" id="analytics-dashboard">
+                <header class="h-20 shrink-0 flex items-center justify-between z-10">
+                    <div class="flex flex-col gap-1">
+                        <h2 class="text-2xl font-display font-bold text-white tracking-tight">Analytics</h2>
+                        <p class="text-xs font-mono text-slate-400">Log level distribution and volume patterns</p>
+                    </div>
+                </header>
+
+                <div class="analysis-dashboard-content">
                     <div class="dash-card">
-                        <h3 style="font-family: 'Outfit', sans-serif;">Health Overview</h3>
-                        <div class="health-status">
-                            <div id="health-pulse" class="status-pulse healthy">✓</div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
                             <div>
-                                <div id="health-text" style="font-size: 20px; font-weight: 700;">System Healthy</div>
-                                <div style="font-size: 13px; color: var(--text-dim);">Deep verification complete</div>
+                                <h3 style="font-family: 'Outfit', sans-serif;">Log Volume Over Time</h3>
+                                <p style="font-size: 13px; color: var(--text-dim); margin-top: 4px;">Total requests vs.
+                                    Error spikes</p>
+                            </div>
+                            <div style="display: flex; gap: 16px; font-size: 11px; font-family: monospace;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span
+                                        style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-primary); box-shadow: 0 0 10px var(--accent-primary);"></span>
+                                    <span style="color: var(--text-dim);">Total Volume</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span
+                                        style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-secondary); box-shadow: 0 0 10px var(--accent-secondary);"></span>
+                                    <span style="color: var(--text-dim);">Errors</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="progress-group" id="distribution-bars" style="margin-top: 20px;">
-                            <!-- Bars will be injected -->
+
+                        <div style="height: 200px; position: relative; width: 100%;">
+                            <div
+                                style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+                                <div style="width: 100%; height: 1px; background: var(--border-glass);"></div>
+                                <div style="width: 100%; height: 1px; background: var(--border-glass);"></div>
+                                <div style="width: 100%; height: 1px; background: var(--border-glass);"></div>
+                                <div style="width: 100%; height: 1px; background: var(--border-glass);"></div>
+                            </div>
+                            <svg id="chart-svg" viewBox="0 0 1000 200" preserveAspectRatio="none"
+                                style="width: 100%; height: 100%; overflow: visible;">
+                                <defs>
+                                    <linearGradient id="cyanGradient" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.2"></stop>
+                                        <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0"></stop>
+                                    </linearGradient>
+                                    <linearGradient id="purpleGradient" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="0%" stop-color="var(--accent-secondary)" stop-opacity="0.3">
+                                        </stop>
+                                        <stop offset="100%" stop-color="var(--accent-secondary)" stop-opacity="0">
+                                        </stop>
+                                    </linearGradient>
+                                </defs>
+                                <path id="volume-fill" fill="url(#cyanGradient)"></path>
+                                <path id="volume-path" fill="none" stroke="var(--accent-primary)" stroke-width="2"
+                                    style="filter: drop-shadow(0 0 4px var(--accent-primary));"></path>
+                                <path id="error-fill" fill="url(#purpleGradient)"></path>
+                                <path id="error-path" fill="none" stroke="var(--accent-secondary)" stroke-width="2"
+                                    style="filter: drop-shadow(0 0 6px var(--accent-secondary));"></path>
+                                <circle id="chart-pulse" cx="0" cy="0" r="4" fill="#fff" stroke="var(--accent-primary)"
+                                    stroke-width="2" style="display: none;">
+                                    <animate attributeName="r" values="4;6;4" dur="2s" repeatCount="indefinite">
+                                    </animate>
+                                </circle>
+                            </svg>
+                        </div>
+
+                        <div id="chart-timeline"
+                            style="display: flex; justify-content: space-between; font-family: monospace; font-size: 10px; color: var(--text-dim); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-glass);">
+                            <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>Now</span>
                         </div>
                     </div>
 
-                    <div class="dash-card">
-                        <h3 style="font-family: 'Outfit', sans-serif;">Top Log Sources</h3>
-                        <div id="top-sources-list" style="display: flex; flex-direction: column; gap: 12px;">
-                            <!-- Sources will be injected -->
+                    <div class="dashboard-row">
+                        <div class="dash-card">
+                            <h3 style="font-family: 'Outfit', sans-serif;">Health Overview</h3>
+                            <div class="health-status">
+                                <div id="health-pulse" class="status-pulse healthy">✓</div>
+                                <div>
+                                    <div id="health-text" style="font-size: 20px; font-weight: 700;">System Healthy
+                                    </div>
+                                    <div style="font-size: 13px; color: var(--text-dim);">Deep verification complete
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="distribution-container"
+                                style="margin-top: 24px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 32px;">
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="dash-card" style="flex: 1; margin-top: 24px;">
-                    <h3 style="font-family: 'Outfit', sans-serif;">Analysis Insights</h3>
-                    <div style="color: var(--text-dim); line-height: 1.6; font-size: 14px;">
-                        Our analysis has processed the log patterns. No critical architectural issues were detected.
-                        <br><br>
-                        <span style="color: var(--accent-primary); font-weight: 600;">Recommendations:</span>
-                        <ul style="margin-top: 8px; margin-left: 20px;">
-                            <li>Log rotation is recommended for top sources.</li>
-                            <li>Critical errors require immediate attention in production.</li>
-                        </ul>
+                        <div class="dash-card">
+                            <h3 style="font-family: 'Outfit', sans-serif;">Top Log Sources</h3>
+                            <div id="top-sources-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Settings View -->
-            <div class="settings-dashboard" id="settings-dashboard">
+            <div class="view-section" id="settings-dashboard">
+                <header class="h-20 shrink-0 flex items-center justify-between z-10">
+                    <div class="flex flex-col gap-1">
+                        <h2 class="text-2xl font-display font-bold text-white tracking-tight">Settings</h2>
+                        <p class="text-xs font-mono text-slate-400">Configure application preferences and updates</p>
+                    </div>
+                </header>
                 <div class="dashboard-row">
                     <div class="dash-card">
                         <h3 style="font-family: 'Outfit', sans-serif;">Appearance</h3>
@@ -170,7 +284,6 @@
                                 </div>
                             </label>
                         </div>
-
                         <div style="margin-top: 24px;">
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -179,12 +292,10 @@
                                     id="zoom-value">100%</span>
                             </div>
                             <div style="display: flex; gap: 10px;">
-                                <button class="update-btn" id="zoom-out-btn" style="flex: 1; justify-content: center;">
-                                    <span>➖</span> Zoom Out
-                                </button>
-                                <button class="update-btn" id="zoom-in-btn" style="flex: 1; justify-content: center;">
-                                    <span>➕</span> Zoom In
-                                </button>
+                                <button class="update-btn" id="zoom-out-btn"
+                                    style="flex: 1; justify-content: center;"><span>➖</span> Zoom Out</button>
+                                <button class="update-btn" id="zoom-in-btn"
+                                    style="flex: 1; justify-content: center;"><span>➕</span> Zoom In</button>
                             </div>
                         </div>
                     </div>
@@ -196,40 +307,56 @@
                                 <div>
                                     <div style="font-size: 14px; font-weight: 500;">Current Version</div>
                                     <div style="font-size: 12px; color: var(--text-dim);" id="current-version">
-                                        Loading...
-                                    </div>
+                                        Loading...</div>
                                 </div>
-                                <button class="update-btn" id="check-update-btn">
-                                    <span>🔄</span> Check for Updates
-                                </button>
+                                <button class="update-btn" id="check-update-btn"><span>🔄</span> Check for
+                                    Updates</button>
                             </div>
                             <div id="update-status" style="font-size: 13px; color: var(--text-dim); display: none;">
-                                <!-- Update status will be injected here -->
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div style="margin-top: auto; padding-top: 40px; border-top: 1px solid var(--border-glass);">
-                    <div class="dash-card">
-                        <h3 style="font-family: 'Outfit', sans-serif;">About</h3>
-                        <div style="color: var(--text-dim); line-height: 1.6; font-size: 14px; margin-top: 12px;">
-                            <p><strong style="color: var(--accent-primary);">Sharky Parser PRO</strong> — Advanced Log
-                                Analysis System</p>
-                            <p style="margin-top: 8px;">Built with Electron, TypeScript, and C#. Designed for
-                                enterprise-level log parsing and analysis.</p>
-                            <p style="margin-top: 8px; font-size: 12px;">© 2026 Sharky Parser. All rights reserved.</p>
+                    <div class="dash-card"
+                        style="flex-direction: row; align-items: center; justify-content: space-between; gap: 32px;">
+                        <div style="flex: 1;">
+                            <h3 style="font-family: 'Outfit', sans-serif;">About</h3>
+                            <div style="color: var(--text-dim); line-height: 1.6; font-size: 14px; margin-top: 12px;">
+                                <p><strong style="color: var(--accent-primary);">Sharky Parser PRO</strong> — Advanced
+                                    Log Analysis System</p>
+                                <p style="margin-top: 8px;">Built with Electron, TypeScript, and C#. Designed for
+                                    enterprise-level log parsing and analysis.</p>
+                                <p style="margin-top: 8px; font-size: 12px;">© 2026 Sharky Parser. All rights reserved.
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; min-width: 220px;">
+                            <button class="update-btn" id="github-btn"
+                                style="background: #24292e; border: 1px solid rgba(255,255,255,0.1); justify-content: center;"><span>🐛</span>
+                                Report Feature\Bug</button>
+                            <button class="star-btn" id="star-btn"><span>⭐</span> Star on GitHub</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Changelog View -->
-            <div class="changelog-dashboard" id="changelog-dashboard">
-                <div class="dash-card">
-                    <h2 style="font-family: 'Outfit', sans-serif; margin-bottom: 20px;">📝 Version History</h2>
-                    <div id="changelog-content" style="color: var(--text-dim); line-height: 1.8; font-size: 14px;">
-                        Loading changelog...
+            <div class="view-section" id="changelog-dashboard">
+                <header class="h-20 shrink-0 flex items-center justify-between z-10">
+                    <div class="flex flex-col gap-1">
+                        <h2 class="text-2xl font-display font-bold text-white tracking-tight">Changelog</h2>
+                        <p class="text-xs font-mono text-slate-400">Latest updates, features, and improvements</p>
+                    </div>
+                </header>
+                <div class="flex-1 overflow-y-auto px-4 relative">
+                    <div class="max-w-5xl mx-auto w-full pt-4 pb-20 relative px-6">
+                        <div
+                            class="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-secondary via-secondary/40 to-transparent">
+                        </div>
+                        <div id="changelog-content" class="relative pl-10">
+                            <!-- Premium entries will be injected here -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -245,12 +372,55 @@
                 <button id="close-modal"
                     style="background: transparent; border: none; color: white; cursor: pointer; font-size: 20px;">&times;</button>
             </div>
-            <div id="modal-details">
-                <!-- Details go here -->
-            </div>
+            <div id="modal-details"></div>
         </div>
     </div>
 
+    <!-- Notice Modal -->
+    <div class="modal-overlay" id="notice-modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center; padding: 48px 40px;">
+            <div style="font-size: 64px; margin-bottom: 24px; filter: drop-shadow(0 0 20px rgba(255,170,0,0.4));">🚧
+            </div>
+            <h3
+                style="font-family: 'Outfit', sans-serif; font-size: 28px; margin-bottom: 16px; color: white; font-weight: 700;">
+                Feature Coming Soon</h3>
+            <p style="color: var(--text-dim); line-height: 1.6; margin-bottom: 32px; font-size: 16px;">
+                Oh, it looks like the developer hasn't implemented this feature yet. Maybe you could ask them to
+                implement it in future updates?
+            </p>
+            <button class="star-btn" id="request-feature-btn"
+                style="width: 100%; justify-content: center; height: 52px; font-size: 16px; border-radius: 14px;">
+                <span>💡</span> Request Implementation
+            </button>
+            <button id="close-notice-modal"
+                style="margin-top: 20px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; text-decoration: underline; opacity: 0.7; transition: opacity 0.2s;">
+                Dismiss
+            </button>
+        </div>
+    </div>
+
+    <!-- Analyze Warning Modal -->
+    <div class="modal-overlay" id="analyze-modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center; padding: 48px 40px;">
+            <div style="font-size: 64px; margin-bottom: 24px; filter: drop-shadow(0 0 20px rgba(255, 170, 0, 0.4));">🚧
+            </div>
+            <h3
+                style="font-family: 'Outfit', sans-serif; font-size: 28px; margin-bottom: 16px; color: white; font-weight: 700;">
+                Wait a second...</h3>
+            <p style="color: var(--text-dim); line-height: 1.6; margin-bottom: 32px; font-size: 16px;">
+                Oh, you haven't selected a file yet, what are you trying to analyze? Please select a log file so we can
+                build the charts!
+            </p>
+            <button class="primary-btn" id="go-select-file-btn"
+                style="width: 100%; justify-content: center; height: 52px; font-size: 16px; border-radius: 14px;">
+                <span>🚀</span> Choose Log File
+            </button>
+            <button id="close-analyze-modal"
+                style="margin-top: 20px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; text-decoration: underline; opacity: 0.7; transition: opacity 0.2s;">
+                Dismiss
+            </button>
+        </div>
+    </div>
     <script type="module" src="./src/main.ts"></script>
 </body>
 
