@@ -9,6 +9,8 @@ SharkyParser.Ui/dotnet-linux/
 bin/
 obj/
 publish/
+nupkg/
+*.nupkg
 .idea/
 *.user
 *.suo
