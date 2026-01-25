@@ -27,6 +27,8 @@ public class InstallationLogParser : BaseLogParser
         var lineNumber = 0;
         
         var baseDate = ExtractDateFromFileName(path) ?? File.GetLastWriteTime(path).Date;
+        
+        _logger.LogInfo("Started to parse Installation log file: " + path);
 
         foreach (var line in File.ReadLines(path))
         {
@@ -94,9 +96,9 @@ public class InstallationLogParser : BaseLogParser
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignored
+            _logger.LogError($"Error extracting date from file name '{path}': {ex}");
         }
 
         return null;
@@ -118,16 +120,14 @@ public class InstallationLogParser : BaseLogParser
         {
             var timestampStr = match.Groups["timestamp"].Value;
             
-            // Try parsing as full DateTime first (for yyyy-MM-dd HH:mm:ss format)
-            if (DateTime.TryParse(timestampStr.Replace(',', '.'), out var dt))
-            {
-                timestamp = dt;
-                message = line.Substring(match.Length).Trim();
-            }
-            // Fallback to time-only parsing (for [HH:mm:ss] format)
-            else if (TimeSpan.TryParse(timestampStr, out var time))
+            if (timestampStr.Length == 8 && TimeSpan.TryParse(timestampStr, out var time))
             {
                 timestamp = baseDate.Add(time);
+                message = line.Substring(match.Length).Trim();
+            }
+            else if (DateTime.TryParse(timestampStr.Replace(',', '.'), out var dateTime))
+            {
+                timestamp = dateTime;
                 message = line.Substring(match.Length).Trim();
             }
         }
