@@ -1,0 +1,132 @@
+{
+    "name": "log-parser",
+    "version": "1.2.0",
+    "description": "Cross-platform Sharky parser with C# backend and Electron UI",
+    "type": "module",
+    "main": "out/main/index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/BlessedDayss/SharkyParser.git"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit -p tsconfig.json --composite false",
+        "start": "electron-vite preview",
+        "dev": "electron-vite dev",
+        "build": "npm run build:win",
+        "build:win": "npm run build:sharky:win && electron-vite build && electron-builder --win",
+        "build:linux": "npm run build:sharky:linux && electron-vite build && electron-builder --linux",
+        "build:mac": "npm run build:sharky:mac && electron-vite build && electron-builder --mac",
+        "build:sharky:win": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet-win",
+        "build:sharky:linux": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet-linux",
+        "build:sharky:mac": "dotnet publish ../SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -o ./dotnet",
+        "test": "cd .. && dotnet test"
+    },
+    "keywords": [
+        "log",
+        "parser",
+        "electron",
+        "csharp",
+        "standalone"
+    ],
+    "author": {
+        "name": "Orkhan Gojayev"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "@electron-toolkit/preload": "^3.0.2",
+        "@electron-toolkit/tsconfig": "^2.0.0",
+        "@electron-toolkit/utils": "^4.0.0",
+        "@types/node": "^25.0.9",
+        "electron": "^40.0.0",
+        "electron-builder": "^24.6.4",
+        "electron-vite": "^5.0.0",
+        "typescript": "^5.9.3",
+        "vite": "^6.4.1"
+    },
+    "build": {
+        "appId": "com.sharkyparser.app",
+        "productName": "SharkyParser",
+        "copyright": "Copyright © 2026 OGTech",
+        "icon": "resources/app_icon.png",
+        "extraResources": [
+            {
+                "from": "../Changelog.md",
+                "to": "Changelog.md"
+            },
+            {
+                "from": "resources",
+                "to": "assets"
+            }
+        ],
+        "linux": {
+            "target": "AppImage",
+            "category": "Utility",
+            "maintainer": "Orkhan Gojayev <orkhan@ogtech.me>",
+            "executableName": "SharkyParser",
+            "extraResources": [
+                {
+                    "from": "dotnet-linux",
+                    "to": "dotnet",
+                    "filter": [
+                        "**/*",
+                        "!*.pdb"
+                    ]
+                }
+            ]
+        },
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!../**",
+            "!dotnet-win/**",
+            "!dotnet-linux/**",
+            "!node_modules/**/{README.md,CHANGELOG.md,README,readme.markdown,test,__tests__,tests,powered-test,example,examples,*.d.ts}",
+            "!node_modules/.bin",
+            "!**/*.map",
+            "!**/*.pdb",
+            "resources/**/*"
+        ],
+        "win": {
+            "target": "nsis",
+            "icon": "resources/app_icon.png",
+            "legalTrademarks": "SharkyParser",
+            "verifyUpdateCodeSignature": false,
+            "extraResources": [
+                {
+                    "from": "dotnet-win",
+                    "to": "dotnet",
+                    "filter": [
+                        "**/*",
+                        "!*.pdb"
+                    ]
+                }
+            ]
+        },
+        "mac": {
+            "target": "dmg",
+            "identity": null,
+            "extraResources": [
+                {
+                    "from": "dotnet",
+                    "to": "dotnet",
+                    "filter": [
+                        "**/*",
+                        "!*.pdb"
+                    ]
+                }
+            ]
+        },
+        "publish": [
+            {
+                "provider": "github",
+                "owner": "BlessedDayss",
+                "repo": "SharkyParser"
+            }
+        ]
+    },
+    "dependencies": {
+        "electron-updater": "^6.7.3"
+    }
+}

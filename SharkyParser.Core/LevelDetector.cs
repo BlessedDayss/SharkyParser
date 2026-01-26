@@ -1,0 +1,98 @@
+using System.Text.RegularExpressions;
+
+namespace SharkyParser.Core;
+
+public static partial class LevelDetector
+{
+    private const int RegexTimeoutMs = 500;
+
+    [GeneratedRegex(@"\b(error|err|erro|fatal|critical)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex ErrorMarkerRegex();
+
+    [GeneratedRegex(@"\b(exception|failed?|timeout|crash)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex ErrorKeywordRegex();
+
+    [GeneratedRegex(@"\b(warn|warning)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex WarnMarkerRegex();
+
+    [GeneratedRegex(@"\b(caution)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex WarnKeywordRegex();
+
+    [GeneratedRegex(@"\b(info)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex InfoMarkerRegex();
+
+    [GeneratedRegex(@"\b(debug|dbg)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex DebugMarkerRegex();
+
+    [GeneratedRegex(@"\b(trace)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex TraceMarkerRegex();
+
+    [GeneratedRegex(@"(?:0\s+(?:error|warning)|no\s+error)", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    private static partial Regex FalsePositiveRegex();
+
+    public static string Detect(string fullLine)
+    {
+        if (string.IsNullOrWhiteSpace(fullLine))
+            return LogLevel.Info;
+
+        try
+        {
+            var line = fullLine.Trim();
+
+            if (IsFalsePositive(line))
+                return LogLevel.Info;
+
+            // Check for exact level matches at the beginning of the line
+            if (line.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("ERR ", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("ERRO ", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Error;
+
+            if (line.StartsWith("WARN", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("WARNING", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Warn;
+
+            if (line.StartsWith("DEBUG", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("DBG ", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Debug;
+
+            if (line.StartsWith("TRACE", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Trace;
+
+            if (line.StartsWith("INFO", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Info;
+
+            if (line.StartsWith("FATAL", StringComparison.OrdinalIgnoreCase) ||
+                line.StartsWith("CRITICAL", StringComparison.OrdinalIgnoreCase))
+                return LogLevel.Error;
+
+            // Fall back to regex patterns
+            if (ErrorMarkerRegex().IsMatch(line)) return LogLevel.Error;
+            if (WarnMarkerRegex().IsMatch(line)) return LogLevel.Warn;
+            if (DebugMarkerRegex().IsMatch(line)) return LogLevel.Debug;
+            if (TraceMarkerRegex().IsMatch(line)) return LogLevel.Trace;
+            if (InfoMarkerRegex().IsMatch(line)) return LogLevel.Info;
+            if (ErrorKeywordRegex().IsMatch(line)) return LogLevel.Error;
+            if (WarnKeywordRegex().IsMatch(line)) return LogLevel.Warn;
+
+            return LogLevel.Info;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            //TODO: ADD LOGGING
+            return LogLevel.Info;
+        }
+    }
+
+    private static bool IsFalsePositive(string line)
+    {
+        try
+        {
+            return FalsePositiveRegex().IsMatch(line);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+}
