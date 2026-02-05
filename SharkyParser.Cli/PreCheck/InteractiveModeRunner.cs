@@ -12,8 +12,6 @@ public interface IInteractiveModeRunner
 
 public class InteractiveModeRunner(CommandApp app, IAppLogger logger) : IInteractiveModeRunner
 {
-    private readonly CommandApp _app = app;
-    private readonly IAppLogger _logger = logger;
 
     public int Run()
     {
@@ -40,12 +38,12 @@ public class InteractiveModeRunner(CommandApp app, IAppLogger logger) : IInterac
             
             if (command is "/help" or "help" or "?")
             {
-                _app.Run(["--help"]);
+                app.Run(["--help"]);
                 continue;
             }
             
             var commandArgs = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            _app.Run(commandArgs);
+            app.Run(commandArgs);
         }
         return 0;
     }

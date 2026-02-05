@@ -1,11 +1,39 @@
 # Sharky Parser PRO 🦈
 
+
+
 [![Release](https://img.shields.io/github/v/release/BlessedDayss/SharkyParser?style=flat-square&color=3399ff)](https://github.com/BlessedDayss/SharkyParser/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 **Sharky Parser PRO** is a high-performance, cross-platform log management suite designed for developers and DevOps engineers. It combines the raw power of a **.NET 8** backend with the sleek, modern experience of an **Electron** frontend.
 
-Whether you're troubleshooting complex installation logs, monitoring IIS traffic, or analyzing RabbitMQ events, Sharky Parser provides the clarity and speed you need.
+<p align="center">
+  <img src="SharkyParser.Ui/resources/Intro/SharkyGIF.gif" width="800" alt="Sharky Parser Pro Preview">
+</p>
+
+---
+
+## 📸 visual Overview
+
+### 🔍 Log Exploration & Error Tracking
+Categorize and navigate through thousands of logs with ease.
+<p align="center">
+  <img src="SharkyParser.Ui/resources/Intro/LogExplorer.png" width="800">
+  <img src="SharkyParser.Ui/resources/Intro/LogExplorerError.png" width="800">
+</p>
+
+### 📊 Advanced Analytics
+Visualize log patterns and system health spikes in real-time.
+<p align="center">
+  <img src="SharkyParser.Ui/resources/Intro/Analytics.png" width="800">
+</p>
+
+### 🛠️ Modern Settings & History
+Full control over themes and a professional changelog experience.
+<p align="center">
+  <img src="SharkyParser.Ui/resources/Intro/Settings.png" width="800">
+  <img src="SharkyParser.Ui/resources/Intro/Changelog.png" width="800">
+</p>
 
 ---
 
@@ -78,12 +106,6 @@ Sharky Parser is built on a "Decoupled Hybrid" architecture:
 - **Backend**: C# (.NET 8) handles the heavy lifting of regex parsing, file I/O, and data processing.
 - **Frontend**: TypeScript + Vite + Electron provides a responsive UI, interacting with the backend via a fast subprocess bridge.
 - **IPC Layer**: Secure communication between the UI and the system, supporting file dialogs, system scaling, and auto-updates.
-
----
-
-## 📸 Screenshots
-
-*WILL BE SOON*
 
 ---
 

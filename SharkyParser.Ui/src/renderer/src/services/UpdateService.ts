@@ -16,10 +16,34 @@ export class UpdateService {
     public async init() {
         this.checkUpdateBtn?.addEventListener('click', () => this.checkForUpdates())
         this.setupIpcListeners()
+        this.setupModalHandlers()
 
         // Show current version
         const version = await (window as any).electron.ipcRenderer.invoke('get-app-version')
         if (this.currentVersionEl) this.currentVersionEl.textContent = `v${version}`
+
+        // Startup check
+        this.checkForUpdates(true)
+    }
+
+    private setupModalHandlers() {
+        const updateModal = document.getElementById('update-notification-modal')
+        const updateNowBtn = document.getElementById('update-now-btn')
+        const skipBtn = document.getElementById('skip-update-btn')
+
+        updateNowBtn?.addEventListener('click', () => {
+            updateModal?.classList.remove('active')
+            // Switch to settings
+            const app = (window as any).app
+            app.navigationService.switchView('settings')
+            // Trigger download
+            const { ipcRenderer } = (window as any).electron
+            ipcRenderer.send('download-update')
+        })
+
+        skipBtn?.addEventListener('click', () => {
+            updateModal?.classList.remove('active')
+        })
     }
 
     private setupIpcListeners() {
@@ -52,14 +76,28 @@ export class UpdateService {
         })
     }
 
-    private async checkForUpdates() {
-        if (this.checkUpdateBtn) this.checkUpdateBtn.innerHTML = '<span>⏳</span> Checking...'
+    private async checkForUpdates(isStartup: boolean = false) {
+        if (!isStartup && this.checkUpdateBtn) this.checkUpdateBtn.innerHTML = '<span>⏳</span> Checking...'
         const result = await (window as any).electron.ipcRenderer.invoke('check-for-updates')
-        if (this.checkUpdateBtn) this.checkUpdateBtn.innerHTML = '<span>🆕</span> Check for Updates'
+        if (!isStartup && this.checkUpdateBtn) this.checkUpdateBtn.innerHTML = '<span>🆕</span> Check for Updates'
 
         if (result.available || result.fallbackStarted) {
-            this.setUpdateStatus(result.fallbackStarted ? 'Smart Download started...' : 'Update found!', 'var(--info)')
-        } else if (result.error) {
+            this.setUpdateStatus(result.fallbackStarted ? 'Smart Download ready...' : 'Update found!', 'var(--info)')
+
+            // If manual check (not startup), trigger download immediately
+            if (!isStartup) {
+                (window as any).electron.ipcRenderer.send('download-update')
+            }
+
+            if (isStartup) {
+                const updateModal = document.getElementById('update-notification-modal')
+                const modalText = document.getElementById('update-modal-text')
+                if (modalText && result.version) {
+                    modalText.innerText = `A newer version (v${result.version}) is available. Do you want to update now?`
+                }
+                updateModal?.classList.add('active')
+            }
+        } else if (result.error && !isStartup) {
             this.setUpdateStatus('Error checking updates', 'var(--error)')
         }
     }

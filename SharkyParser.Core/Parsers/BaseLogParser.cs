@@ -9,7 +9,7 @@ public abstract class BaseLogParser : ILogParser
     public abstract string ParserName { get; }
     public abstract string ParserDescription { get; }
 
-    private readonly IAppLogger _logger;
+    protected readonly IAppLogger _logger;
     
     
     protected BaseLogParser(IAppLogger logger)

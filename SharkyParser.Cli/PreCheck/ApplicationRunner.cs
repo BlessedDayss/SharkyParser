@@ -10,23 +10,19 @@ public class ApplicationRunner(
     IEmbeddedModeRunner embeddedRunner,
     IAppLogger logger)
 {
-    private readonly ApplicationModeDetector _modeDetector = modeDetector;
-    private readonly ICliModeRunner _cliRunner = cliRunner;
-    private readonly IInteractiveModeRunner _interactiveRunner = interactiveRunner;
-    private readonly IEmbeddedModeRunner _embeddedRunner = embeddedRunner;
-    private readonly IAppLogger _logger = logger;
+
 
     public int Run(string[] args)
     {
-        _logger.LogAppStart(args);
-        var mode = _modeDetector.DetermineMode(args);
-        _logger.LogModeDetected(mode.ToString());
+        logger.LogAppStart(args);
+        var mode = modeDetector.DetermineMode(args);
+        logger.LogModeDetected(mode.ToString());
         
         return mode switch
         {
-            ApplicationMode.Cli => _cliRunner.Run(args),
-            ApplicationMode.Interactive => _interactiveRunner.Run(),
-            ApplicationMode.Embedded => _embeddedRunner.Run(args),
+            ApplicationMode.Cli => cliRunner.Run(args),
+            ApplicationMode.Interactive => interactiveRunner.Run(),
+            ApplicationMode.Embedded => embeddedRunner.Run(args),
             _ => throw new InvalidOperationException($"Unknown application mode: {mode}")
         };
     }

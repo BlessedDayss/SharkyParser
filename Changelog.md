@@ -1,5 +1,22 @@
 # Changelog
 
+## Version 1.2.0 - 2026-01-21
+
+### Added
+- Auto-Update System - Automatic background updates with progress bar
+- Smart Download - Fallback to direct download if auto-update fails
+- Update Notifications - In-app alerts for new versions
+- Version Display - Current version shown in Settings
+
+### Improved
+- Update Reliability - Enhanced error handling for network issues
+- User Experience - Non-blocking update checks
+- Security - Verified update sources
+
+### Fixed
+- Update Errors - Resolved issues with update checks
+- UI Glitches - Fixed update status display
+
 ## Version 1.1.9 - 2026-01-21
 
 ### Added
