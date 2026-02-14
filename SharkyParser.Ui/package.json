@@ -37,7 +37,7 @@
         "@electron-toolkit/tsconfig": "^2.0.0",
         "@electron-toolkit/utils": "^4.0.0",
         "@types/node": "^25.0.9",
-        "electron": "^40.0.0",
+        "electron": "^40.2.1",
         "electron-builder": "^24.6.4",
         "electron-vite": "^5.0.0",
         "typescript": "^5.9.3",
