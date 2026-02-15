@@ -1,0 +1,102 @@
+<div class="ai-agent">
+  <div class="chat-area">
+    <header class="chat-header">
+      <div class="header-info">
+        <span class="material-symbols-outlined header-icon">smart_toy</span>
+        <div>
+          <h2 class="title">AI Agent</h2>
+          <p class="subtitle">Powered by GitHub Copilot</p>
+        </div>
+      </div>
+      <div class="status-badge" [class.active]="!isTyping()">
+        <span class="status-dot"></span>
+        {{ isTyping() ? 'Analyzing...' : 'Ready' }}
+      </div>
+    </header>
+
+    <div class="messages" #messagesContainer>
+      @for (msg of messages(); track msg.timestamp) {
+        <div class="message" [class.user]="msg.role === 'user'" [class.agent]="msg.role === 'agent'">
+          @if (msg.role === 'agent') {
+            <div class="avatar agent-avatar">
+              <span class="material-symbols-outlined">smart_toy</span>
+            </div>
+          }
+          <div class="bubble">
+            <p class="bubble-text">{{ msg.text }}</p>
+            <span class="bubble-time">{{ msg.timestamp | date:'HH:mm' }}</span>
+          </div>
+          @if (msg.role === 'user') {
+            <div class="avatar user-avatar">
+              <span class="material-symbols-outlined">person</span>
+            </div>
+          }
+        </div>
+      }
+
+      @if (isTyping()) {
+        <div class="message agent">
+          <div class="avatar agent-avatar">
+            <span class="material-symbols-outlined">smart_toy</span>
+          </div>
+          <div class="bubble typing-bubble">
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="input-bar">
+      <textarea
+        class="chat-input"
+        [ngModel]="inputText()"
+        (ngModelChange)="inputText.set($event)"
+        (keydown)="onKeydown($event)"
+        placeholder="Ask about your logs..."
+        rows="1"
+      ></textarea>
+      <button class="send-btn" (click)="sendMessage()" [disabled]="!inputText().trim() || isTyping()">
+        <span class="material-symbols-outlined">send</span>
+      </button>
+    </div>
+  </div>
+
+  <aside class="context-panel">
+    <div class="panel-section">
+      <h3 class="panel-title">Log Context</h3>
+      @if (logSummary(); as summary) {
+        <div class="log-info glass-panel">
+          <div class="info-row"><span class="info-label">Entries</span><span class="info-value">{{ summary.total }}</span></div>
+          <div class="info-row"><span class="info-label">Errors</span><span class="info-value error">{{ summary.errors }}</span></div>
+          <div class="info-row"><span class="info-label">Warnings</span><span class="info-value warn">{{ summary.warnings }}</span></div>
+          <div class="info-row"><span class="info-label">Info</span><span class="info-value info">{{ summary.info }}</span></div>
+        </div>
+      } @else {
+        <div class="no-data glass-panel">
+          <span class="material-symbols-outlined">info</span>
+          <p>No log file loaded. Open a log in Log Explorer first.</p>
+        </div>
+      }
+    </div>
+
+    <div class="panel-section">
+      <h3 class="panel-title">Quick Actions</h3>
+      <div class="chips">
+        @for (action of quickActions; track action) {
+          <button class="chip" (click)="onQuickAction(action)" [disabled]="isTyping()">
+            {{ action }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3 class="panel-title">About</h3>
+      <p class="about-text">
+        This agent uses the GitHub Copilot SDK to analyze log files. It can summarize errors, detect patterns, and explain warnings.
+      </p>
+    </div>
+  </aside>
+</div>

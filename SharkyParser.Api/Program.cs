@@ -1,4 +1,5 @@
 using SharkyParser.Api.Infrastructure;
+using SharkyParser.Api.Services;
 using SharkyParser.Core;
 using SharkyParser.Core.Infrastructure;
 using SharkyParser.Core.Interfaces;
@@ -14,6 +15,9 @@ builder.Services.AddTransient<InstallationLogParser>();
 builder.Services.AddTransient<UpdateLogParser>();
 builder.Services.AddTransient<IISLogParser>();
 builder.Services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
+
+// AI Agent (Copilot SDK)
+builder.Services.AddSingleton<CopilotAgentService>();
 
 builder.Services.AddControllers();
 

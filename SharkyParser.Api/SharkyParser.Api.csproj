@@ -12,4 +12,8 @@
     <Content Include="..\Changelog.md" Link="Changelog.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="GitHub.Copilot.SDK" Version="0.1.23" />
+  </ItemGroup>
+
 </Project>

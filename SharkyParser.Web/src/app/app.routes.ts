@@ -6,5 +6,6 @@ export const routes: Routes = [
   { path: 'logs', loadComponent: () => import('./features/log-explorer/log-explorer.component').then(m => m.LogExplorerComponent) },
   { path: 'analytics', loadComponent: () => import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent) },
   { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent) },
-  { path: 'changelog', loadComponent: () => import('./features/changelog/changelog.component').then(m => m.ChangelogComponent) }
+  { path: 'changelog', loadComponent: () => import('./features/changelog/changelog.component').then(m => m.ChangelogComponent) },
+  { path: 'ai-agent', loadComponent: () => import('./features/ai-agent/ai-agent.component').then(m => m.AiAgentComponent) }
 ];
