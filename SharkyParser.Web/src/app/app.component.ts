@@ -36,6 +36,7 @@ export class AppComponent implements OnInit {
   }
 
   onOpenLog() {
+    this.router.navigate(['/logs']);
     this.fileInput.nativeElement.click();
   }
 
@@ -51,6 +52,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.fileSelection.openPicker$.subscribe(() => {
+      this.router.navigate(['/logs']);
       this.fileInput.nativeElement.click();
     });
 

@@ -4,6 +4,38 @@
   box-sizing: border-box;
 }
 
+// Beautiful custom scrollbar — SharkyParser theme
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 242, 255, 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 255, 0.25);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 255, 0.45);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 242, 255, 0.55);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 html {
   scroll-behavior: smooth;
 }
