@@ -1,22 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-
-        <!-- Framework-dependent publishing settings -->
-        <PublishTrimmed>false</PublishTrimmed>
-
-        <!-- Application metadata -->
-        <Version>1.0.4</Version>
-        <Authors>Orkhan Gojayev</Authors>
-        <Company>OGTech</Company>
-        <Product>SharkyParser</Product>
-        <Copyright>Copyright © 2026 OGTech</Copyright>
-        <Description>Self-contained log parser for Electron application</Description>
+      <OutputType>Exe</OutputType>
+      <TargetFramework>net8.0</TargetFramework>
+      <ImplicitUsings>enable</ImplicitUsings>
+      <Nullable>enable</Nullable>
+        
+      <!-- Tool Settings -->
+      <PackAsTool>true</PackAsTool>
+      <ToolCommandName>sharky</ToolCommandName>
+      <PackageId>SharkyParser</PackageId>
+      <PackageOutputPath>./nupkg</PackageOutputPath>
+      <Version>1.2.0</Version>
+        
+      <!-- NuGet Metadata -->
+      <Authors>BlessedDays</Authors>
+      <Description>A fast and flexible log parser and analyzer CLI tool.</Description>
+      <PackageLicenseExpression>MIT</PackageLicenseExpression>
+      <RepositoryUrl>https://github.com/BlessedDayss/SharkyParser</RepositoryUrl>
+      <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 
 
     <ItemGroup>

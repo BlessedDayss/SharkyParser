@@ -19,8 +19,12 @@ public static class Startup
     {
         config.SetApplicationName("sharky");
         config.AddCommand<ParseCommand>("parse")
-            .WithDescription("Parse log file and display entries in table format");
+            .WithDescription("Parse log file and display entries in table format")
+            .WithExample(["parse", "path/to/log.log", "-t", "installation"])
+            .WithExample(["parse", "path/to/log.log", "-t", "update", "-f", "error"]);
         config.AddCommand<AnalyzeCommand>("analyze")
-            .WithDescription("Analyze log file and show status");
+            .WithDescription("Analyze log file and show statistics (errors, warnings, etc.)")
+            .WithExample(["analyze", "path/to/log.log", "-t", "installation"])
+            .WithExample(["analyze", "path/to/log.log", "-t", "iis"]);
     }
 }

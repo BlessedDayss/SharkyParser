@@ -4,8 +4,8 @@ namespace SharkyParser.Core;
 
 public class LogAnalyzer : ILogAnalyzer
 {
-    private static readonly string[] ErrorLevels = { "ERROR", "FATAL", "CRITICAL" };
-    private static readonly string[] WarningLevels = { "WARN", "WARNING" };
+    private static readonly string[] ErrorLevels = ["ERROR", "FATAL", "CRITICAL"];
+    private static readonly string[] WarningLevels = ["WARN", "WARNING"];
 
     public bool HasErrors(IEnumerable<LogEntry> entries)
         => entries.Any(e => ErrorLevels.Any(level => 

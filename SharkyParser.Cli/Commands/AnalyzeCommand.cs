@@ -11,15 +11,15 @@ public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer
     public sealed class Settings : CommandSettings
     {
         [CommandArgument(0, "<path>")]
-        [Description("Path to the log file to analyze")]
+        [Description("Path to the log file (e.g., mylog.log or /path/to/logs/server.log)")]
         public string Path { get; set; } = string.Empty;
 
         [CommandOption("-t|--type")]
-        [Description("REQUIRED: Log type - installation, update, rabbit, iis")]
+        [Description("Log type: installation, update, rabbitmq, iis")]
         public string? LogTypeString { get; set; }
 
         [CommandOption("--embedded")]
-        [Description("Output in structured format for embedded use")]
+        [Description("Output in structured format for integration with other tools")]
         public bool Embedded { get; set; }
     }
 
@@ -27,12 +27,28 @@ public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer
     {
         if (string.IsNullOrEmpty(settings.LogTypeString))
         {
-            AnsiConsole.MarkupLine("[red]Error: Log type is required. Use --type option.[/]");
+            AnsiConsole.MarkupLine("[red]Error: Log type is required![/]");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[yellow]Usage:[/] analyze <file> -t <type>");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[cyan]Available log types:[/]");
+            AnsiConsole.MarkupLine("  [green]installation[/]  - Installation logs");
+            AnsiConsole.MarkupLine("  [green]update[/]        - Update logs");
+            AnsiConsole.MarkupLine("  [green]rabbitmq[/]      - RabbitMQ logs");
+            AnsiConsole.MarkupLine("  [green]iis[/]           - IIS server logs");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[grey]Example: analyze mylog.log -t installation[/]");
             return 1;
         }
         if (!Enum.TryParse<LogType>(settings.LogTypeString, true, out var logType))
         {
-            AnsiConsole.MarkupLine("[red]Error: Log type is required. Use --type option.[/]");
+            AnsiConsole.MarkupLine($"[red]Error: Unknown log type '{settings.LogTypeString}'[/]");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[cyan]Available log types:[/]");
+            AnsiConsole.MarkupLine("  [green]installation[/]  - Installation logs");
+            AnsiConsole.MarkupLine("  [green]update[/]        - Update logs");
+            AnsiConsole.MarkupLine("  [green]rabbitmq[/]      - RabbitMQ logs");
+            AnsiConsole.MarkupLine("  [green]iis[/]           - IIS server logs");
             return 1;
         }
 
