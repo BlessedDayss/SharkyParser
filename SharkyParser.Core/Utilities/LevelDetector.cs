@@ -79,7 +79,6 @@ public static partial class LevelDetector
         }
         catch (RegexMatchTimeoutException)
         {
-            //TODO: ADD LOGGING
             return LogLevel.Info;
         }
     }
