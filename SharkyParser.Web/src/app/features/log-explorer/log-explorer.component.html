@@ -92,6 +92,21 @@
   }
 </div>
 
+@if (showAiPrompt()) {
+  <div class="ai-prompt-card" (click)="$event.stopPropagation()">
+    <button class="ai-prompt-close" (click)="dismissAiPrompt()">&times;</button>
+    <div class="ai-prompt-icon">
+      <span class="material-symbols-outlined">smart_toy</span>
+    </div>
+    <p class="ai-prompt-title">Want a quick analysis?</p>
+    <p class="ai-prompt-desc">Let the AI Agent summarize errors, detect patterns, and explain your logs in seconds.</p>
+    <button class="ai-prompt-btn" (click)="goToAiAgent()">
+      <span class="material-symbols-outlined">arrow_forward</span>
+      Open AI Agent
+    </button>
+  </div>
+}
+
 @if (showModal() && selectedEntry(); as entry) {
   <div class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">

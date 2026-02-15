@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
 
@@ -13,7 +13,7 @@ public class InstallationLogParser : BaseLogParser
     public StackTraceMode StackTraceMode { get; set; } = StackTraceMode.AllToStackTrace;
 
     private static readonly Regex TimestampPattern = new(
-        @"^(\[(?<timestamp>\d{2}:\d{2}:\d{2})\]|(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:[.,]\d{3})?))",
+        @"^(\[(?<timestamp>\d{2}:\d{2}:\d{2})\]|(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:[.,]\d{3})?)|(?<timestamp>\d{2}:\d{2}:\d{2}(?:[:.]\d{1,4})?)(?=\s))",
         RegexOptions.Compiled);
 
     public InstallationLogParser(IAppLogger logger)
@@ -120,9 +120,34 @@ public class InstallationLogParser : BaseLogParser
         {
             var timestampStr = match.Groups["timestamp"].Value;
             
-            if (timestampStr.Length == 8 && TimeSpan.TryParse(timestampStr, out var time))
+            // Handle HH:MM:SS (8 chars) or HH:MM:SS:NNNN / HH:MM:SS.NNNN (bare time with optional ms)
+            var timePart = timestampStr;
+            // Normalize "21:21:47:6804" → keep only HH:MM:SS for TimeSpan parsing, preserve ms
+            var colonCount = timePart.Split(':').Length - 1;
+            TimeSpan parsedTime = default;
+            bool timeOk = false;
+
+            if (colonCount >= 3)
             {
-                timestamp = baseDate.Add(time);
+                // Format like 21:21:47:6804 — 4th segment is milliseconds
+                var segments = timePart.Split(':');
+                if (TimeSpan.TryParse($"{segments[0]}:{segments[1]}:{segments[2]}", out parsedTime))
+                {
+                    if (segments.Length > 3 && int.TryParse(segments[3], out var ms))
+                    {
+                        parsedTime = parsedTime.Add(TimeSpan.FromMilliseconds(ms > 999 ? ms / 10.0 : ms));
+                    }
+                    timeOk = true;
+                }
+            }
+            else if (timePart.Length <= 12 && TimeSpan.TryParse(timePart.Replace('.', ':'), out parsedTime))
+            {
+                timeOk = true;
+            }
+
+            if (timeOk)
+            {
+                timestamp = baseDate.Add(parsedTime);
                 message = line.Substring(match.Length).Trim();
             }
             else if (DateTime.TryParse(timestampStr.Replace(',', '.'), out var dateTime))

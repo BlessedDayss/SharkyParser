@@ -16,7 +16,9 @@ builder.Services.AddTransient<UpdateLogParser>();
 builder.Services.AddTransient<IISLogParser>();
 builder.Services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
 
-// AI Agent (Copilot SDK)
+// AI Agent (GitHub Models API + OAuth Device Flow)
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<GitHubAuthService>();
 builder.Services.AddSingleton<CopilotAgentService>();
 
 builder.Services.AddControllers();

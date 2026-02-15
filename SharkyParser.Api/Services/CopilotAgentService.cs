@@ -1,117 +1,125 @@
-using GitHub.Copilot.SDK;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SharkyParser.Api.Services;
 
-public sealed class CopilotAgentService : IAsyncDisposable
+public sealed class CopilotAgentService
 {
     private readonly ILogger<CopilotAgentService> _logger;
     private readonly IConfiguration _config;
-    private CopilotClient? _client;
-    private bool _started;
+    private readonly HttpClient _http;
+    private readonly GitHubAuthService _auth;
 
-    public CopilotAgentService(ILogger<CopilotAgentService> logger, IConfiguration config)
+    private const string DefaultEndpoint = "https://models.inference.ai.azure.com";
+    private const string DefaultModel = "gpt-4o";
+
+    public CopilotAgentService(ILogger<CopilotAgentService> logger, IConfiguration config, IHttpClientFactory httpFactory, GitHubAuthService auth)
     {
         _logger = logger;
         _config = config;
+        _http = httpFactory.CreateClient("CopilotAgent");
+        _auth = auth;
+    }
+
+    /// <summary>
+    /// Returns the current auth status.
+    /// </summary>
+    public AuthStatus GetAuthStatus()
+    {
+        return new AuthStatus(
+            IsAuthenticated: _auth.IsAuthenticated,
+            Message: _auth.IsAuthenticated
+                ? "Authenticated via GitHub."
+                : "Not authenticated. Sign in with GitHub to use the AI Agent."
+        );
     }
 
     public async Task<string> ChatAsync(string message, string? logContext, CancellationToken ct = default)
     {
-        await EnsureStartedAsync(ct);
+        var token = _auth.AccessToken;
+        if (string.IsNullOrEmpty(token))
+        {
+            return "⚠ Not authenticated.\n\nPlease sign in with GitHub using the button above to start using the AI Agent.";
+        }
+
+        var endpoint = _config["Copilot:Endpoint"] ?? DefaultEndpoint;
+        var model = _config["Copilot:Model"] ?? DefaultModel;
 
         var systemPrompt = BuildSystemPrompt(logContext);
 
-        await using var session = await _client!.CreateSessionAsync(new SessionConfig
+        var body = new ChatCompletionRequest
         {
-            Model = _config["Copilot:Model"] ?? "gpt-4o",
-            SystemMessage = new SystemMessageConfig
-            {
-                Mode = SystemMessageMode.Append,
-                Content = systemPrompt
-            }
-        });
+            Model = model,
+            Messages =
+            [
+                new ChatMsg("system", systemPrompt),
+                new ChatMsg("user", message)
+            ],
+            MaxTokens = 2048,
+            Temperature = 0.3
+        };
 
-        var response = new TaskCompletionSource<string>();
-        var content = string.Empty;
+        var json = JsonSerializer.Serialize(body, JsonCtx.Default.ChatCompletionRequest);
 
-        session.On(evt =>
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{endpoint}/chat/completions")
         {
-            switch (evt)
-            {
-                case AssistantMessageEvent msg:
-                    content = msg.Data.Content;
-                    break;
-                case SessionIdleEvent:
-                    response.TrySetResult(content);
-                    break;
-                case SessionErrorEvent err:
-                    response.TrySetException(new Exception(err.Data.Message));
-                    break;
-            }
-        });
-
-        await session.SendAsync(new MessageOptions { Prompt = message });
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(60));
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         try
         {
-            return await response.Task.WaitAsync(cts.Token);
+            var response = await _http.SendAsync(request, ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogWarning("GitHub Models API returned {Status}: {Body}", (int)response.StatusCode, errBody);
+
+                if ((int)response.StatusCode == 401 || (int)response.StatusCode == 403)
+                {
+                    return "⚠ Authentication failed. Your GitHub Token may be invalid or expired.\n\n" +
+                           "Please generate a new token at https://github.com/settings/tokens and update your configuration.";
+                }
+
+                return $"The AI service returned an error (HTTP {(int)response.StatusCode}). Please try again later.";
+            }
+
+            var resultJson = await response.Content.ReadAsStringAsync(ct);
+            var result = JsonSerializer.Deserialize(resultJson, JsonCtx.Default.ChatCompletionResponse);
+
+            var content = result?.Choices?.FirstOrDefault()?.Message?.Content;
+            return content ?? "No response from AI model.";
         }
-        catch (OperationCanceledException)
+        catch (TaskCanceledException)
         {
             return "The request timed out. Please try again.";
         }
-    }
-
-    private async Task EnsureStartedAsync(CancellationToken ct)
-    {
-        if (_started) return;
-
-        var token = _config["Copilot:GitHubToken"]
-                    ?? Environment.GetEnvironmentVariable("GITHUB_TOKEN")
-                    ?? Environment.GetEnvironmentVariable("GH_TOKEN")
-                    ?? Environment.GetEnvironmentVariable("COPILOT_GITHUB_TOKEN");
-
-        var options = new CopilotClientOptions
+        catch (Exception ex)
         {
-            AutoStart = true,
-            UseStdio = true,
-        };
-
-        if (!string.IsNullOrEmpty(token))
-        {
-            options.GithubToken = token;
+            _logger.LogError(ex, "Failed to call GitHub Models API");
+            return "An unexpected error occurred while contacting the AI service. Check the server logs for details.";
         }
-
-        var cliUrl = _config["Copilot:CliUrl"];
-        if (!string.IsNullOrEmpty(cliUrl))
-        {
-            options.CliUrl = cliUrl;
-        }
-
-        _client = new CopilotClient(options);
-        await _client.StartAsync();
-        _started = true;
-        _logger.LogInformation("Copilot SDK client started successfully");
     }
 
     private static string BuildSystemPrompt(string? logContext)
     {
-        var prompt = @"
-You are SharkyParser AI Agent — a log analysis expert.
-Your job is to help developers understand, debug, and analyze application log files.
+        var prompt = """
+            You are SharkyParser AI Agent — a log analysis expert embedded in a developer tool.
+            Your job is to help developers understand, debug, and analyze application log files.
 
-When the user provides logs, you should:
-- Summarize errors and warnings concisely
-- Identify recurring patterns or spikes
-- Explain probable root causes
-- Suggest fixes or next debugging steps
-- Use clear formatting with bullet points
+            When the user provides logs, you should:
+            - Summarize errors and warnings concisely
+            - Identify recurring patterns or spikes
+            - Explain probable root causes
+            - Suggest fixes or next debugging steps
+            - Use clear formatting with bullet points and markdown
 
-If no log context is provided, let the user know they need to load a log file first.
-Keep answers concise but thorough.";
+            If no log context is provided, let the user know they should load a log file first.
+            Keep answers concise but thorough. Always respond in English.
+            """;
 
         if (!string.IsNullOrWhiteSpace(logContext))
         {
@@ -120,19 +128,42 @@ Keep answers concise but thorough.";
 
         return prompt;
     }
+}
 
-    public async ValueTask DisposeAsync()
+// ── JSON models ────────────────────────────────────────────
+
+public record AuthStatus(bool IsAuthenticated, string Message);
+
+public class ChatCompletionRequest
+{
+    [JsonPropertyName("model")] public string Model { get; set; } = "";
+    [JsonPropertyName("messages")] public List<ChatMsg> Messages { get; set; } = [];
+    [JsonPropertyName("max_tokens")] public int MaxTokens { get; set; }
+    [JsonPropertyName("temperature")] public double Temperature { get; set; }
+}
+
+public class ChatMsg
+{
+    [JsonPropertyName("role")] public string Role { get; set; }
+    [JsonPropertyName("content")] public string Content { get; set; }
+
+    public ChatMsg(string role, string content)
     {
-        if (_client != null)
-        {
-            try
-            {
-                await _client.StopAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error stopping Copilot client");
-            }
-        }
+        Role = role;
+        Content = content;
     }
 }
+
+public class ChatCompletionResponse
+{
+    [JsonPropertyName("choices")] public List<ChatChoice>? Choices { get; set; }
+}
+
+public class ChatChoice
+{
+    [JsonPropertyName("message")] public ChatMsg? Message { get; set; }
+}
+
+[JsonSerializable(typeof(ChatCompletionRequest))]
+[JsonSerializable(typeof(ChatCompletionResponse))]
+internal partial class JsonCtx : JsonSerializerContext { }

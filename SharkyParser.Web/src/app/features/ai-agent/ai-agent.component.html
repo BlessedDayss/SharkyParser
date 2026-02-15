@@ -1,102 +1,186 @@
 <div class="ai-agent">
-  <div class="chat-area">
-    <header class="chat-header">
-      <div class="header-info">
-        <span class="material-symbols-outlined header-icon">smart_toy</span>
-        <div>
-          <h2 class="title">AI Agent</h2>
-          <p class="subtitle">Powered by GitHub Copilot</p>
+  <!-- ── Auth Screen ──────────────────────────────────── -->
+  @if (!isAuthenticated() && !authLoading()) {
+    <div class="auth-screen">
+      <div class="auth-card glass-panel">
+        <div class="auth-icon">
+          <span class="material-symbols-outlined">smart_toy</span>
         </div>
-      </div>
-      <div class="status-badge" [class.active]="!isTyping()">
-        <span class="status-dot"></span>
-        {{ isTyping() ? 'Analyzing...' : 'Ready' }}
-      </div>
-    </header>
+        <h2 class="auth-title">AI Agent</h2>
+        <p class="auth-subtitle">Sign in with GitHub to unlock AI-powered log analysis</p>
 
-    <div class="messages" #messagesContainer>
-      @for (msg of messages(); track msg.timestamp) {
-        <div class="message" [class.user]="msg.role === 'user'" [class.agent]="msg.role === 'agent'">
-          @if (msg.role === 'agent') {
-            <div class="avatar agent-avatar">
-              <span class="material-symbols-outlined">smart_toy</span>
-            </div>
-          }
-          <div class="bubble">
-            <p class="bubble-text">{{ msg.text }}</p>
-            <span class="bubble-time">{{ msg.timestamp | date:'HH:mm' }}</span>
-          </div>
-          @if (msg.role === 'user') {
-            <div class="avatar user-avatar">
-              <span class="material-symbols-outlined">person</span>
-            </div>
-          }
-        </div>
-      }
-
-      @if (isTyping()) {
-        <div class="message agent">
-          <div class="avatar agent-avatar">
-            <span class="material-symbols-outlined">smart_toy</span>
-          </div>
-          <div class="bubble typing-bubble">
-            <div class="typing-dots">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-        </div>
-      }
-    </div>
-
-    <div class="input-bar">
-      <textarea
-        class="chat-input"
-        [ngModel]="inputText()"
-        (ngModelChange)="inputText.set($event)"
-        (keydown)="onKeydown($event)"
-        placeholder="Ask about your logs..."
-        rows="1"
-      ></textarea>
-      <button class="send-btn" (click)="sendMessage()" [disabled]="!inputText().trim() || isTyping()">
-        <span class="material-symbols-outlined">send</span>
-      </button>
-    </div>
-  </div>
-
-  <aside class="context-panel">
-    <div class="panel-section">
-      <h3 class="panel-title">Log Context</h3>
-      @if (logSummary(); as summary) {
-        <div class="log-info glass-panel">
-          <div class="info-row"><span class="info-label">Entries</span><span class="info-value">{{ summary.total }}</span></div>
-          <div class="info-row"><span class="info-label">Errors</span><span class="info-value error">{{ summary.errors }}</span></div>
-          <div class="info-row"><span class="info-label">Warnings</span><span class="info-value warn">{{ summary.warnings }}</span></div>
-          <div class="info-row"><span class="info-label">Info</span><span class="info-value info">{{ summary.info }}</span></div>
-        </div>
-      } @else {
-        <div class="no-data glass-panel">
-          <span class="material-symbols-outlined">info</span>
-          <p>No log file loaded. Open a log in Log Explorer first.</p>
-        </div>
-      }
-    </div>
-
-    <div class="panel-section">
-      <h3 class="panel-title">Quick Actions</h3>
-      <div class="chips">
-        @for (action of quickActions; track action) {
-          <button class="chip" (click)="onQuickAction(action)" [disabled]="isTyping()">
-            {{ action }}
+        @if (!authFlowActive()) {
+          <button class="auth-btn" (click)="startAuth()">
+            <svg class="github-mark" viewBox="0 0 16 16" width="20" height="20">
+              <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            Sign in with GitHub
           </button>
+        }
+
+        @if (authFlowActive() && deviceCode(); as dc) {
+          <div class="device-flow">
+            <p class="device-instruction">Enter this code on GitHub:</p>
+            <div class="code-display" (click)="copyCode()">
+              <span class="user-code">{{ dc.userCode }}</span>
+              <span class="copy-hint">
+                <span class="material-symbols-outlined">content_copy</span>
+                Click to copy
+              </span>
+            </div>
+            <button class="open-github-btn" (click)="openGitHub()">
+              Open GitHub
+              <span class="material-symbols-outlined">open_in_new</span>
+            </button>
+            <div class="poll-status">
+              <div class="spinner"></div>
+              <span>Waiting for authorization...</span>
+            </div>
+          </div>
+        }
+
+        @if (authFlowActive() && !deviceCode()) {
+          <div class="poll-status">
+            <div class="spinner"></div>
+            <span>{{ authMessage() || 'Connecting...' }}</span>
+          </div>
+        }
+
+        @if (!authFlowActive() && authMessage()) {
+          <p class="auth-error">{{ authMessage() }}</p>
+          <button class="auth-btn retry" (click)="startAuth()">Try Again</button>
         }
       </div>
     </div>
+  }
 
-    <div class="panel-section">
-      <h3 class="panel-title">About</h3>
-      <p class="about-text">
-        This agent uses the GitHub Copilot SDK to analyze log files. It can summarize errors, detect patterns, and explain warnings.
-      </p>
+  @if (authLoading()) {
+    <div class="auth-screen">
+      <div class="auth-card glass-panel">
+        <div class="poll-status">
+          <div class="spinner"></div>
+          <span>Checking authentication...</span>
+        </div>
+      </div>
     </div>
-  </aside>
+  }
+
+  <!-- ── Chat UI (authenticated) ──────────────────────── -->
+  @if (isAuthenticated()) {
+    <div class="chat-area">
+      <header class="chat-header">
+        <div class="header-info">
+          <span class="material-symbols-outlined header-icon">smart_toy</span>
+          <div>
+            <h2 class="title">AI Agent</h2>
+            <p class="subtitle">Powered by GitHub Models</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="status-badge" [class.active]="!isTyping()">
+            <span class="status-dot"></span>
+            {{ isTyping() ? 'Analyzing...' : 'Ready' }}
+          </div>
+          <button class="logout-btn" (click)="logout()" title="Sign out">
+            <span class="material-symbols-outlined">logout</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="messages" #messagesContainer>
+        @for (msg of messages(); track msg.timestamp) {
+          <div class="message" [class.user]="msg.role === 'user'" [class.agent]="msg.role === 'agent'">
+            @if (msg.role === 'agent') {
+              <div class="avatar agent-avatar">
+                <span class="material-symbols-outlined">smart_toy</span>
+              </div>
+            }
+            <div class="bubble">
+              @if (msg.role === 'agent' && msg.html) {
+                <div class="bubble-text md-content" [innerHTML]="msg.html"></div>
+              } @else {
+                <p class="bubble-text">{{ msg.text }}</p>
+              }
+              <span class="bubble-time">{{ msg.timestamp | date:'HH:mm' }}</span>
+            </div>
+            @if (msg.role === 'user') {
+              <div class="avatar user-avatar">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (isTyping()) {
+          <div class="message agent">
+            <div class="avatar agent-avatar">
+              <span class="material-symbols-outlined">smart_toy</span>
+            </div>
+            <div class="bubble typing-bubble">
+              <div class="typing-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="input-bar">
+        <textarea
+          class="chat-input"
+          [ngModel]="inputText()"
+          (ngModelChange)="inputText.set($event)"
+          (keydown)="onKeydown($event)"
+          placeholder="Ask about your logs..."
+          rows="1"
+        ></textarea>
+        <button class="send-btn" (click)="sendMessage()" [disabled]="!inputText().trim() || isTyping()">
+          <span class="material-symbols-outlined">send</span>
+        </button>
+      </div>
+    </div>
+
+    <aside class="context-panel">
+      <div class="panel-section">
+        <h3 class="panel-title">Log Context</h3>
+        @if (logSummary(); as summary) {
+          <div class="log-info glass-panel">
+            @if (logFileName()) {
+              <div class="info-row file-row">
+                <span class="material-symbols-outlined" style="font-size:14px;color:var(--accent-teal)">description</span>
+                <span class="info-label file-name">{{ logFileName() }}</span>
+              </div>
+            }
+            <div class="info-row"><span class="info-label">Entries</span><span class="info-value">{{ summary.total }}</span></div>
+            <div class="info-row"><span class="info-label">Errors</span><span class="info-value error">{{ summary.errors }}</span></div>
+            <div class="info-row"><span class="info-label">Warnings</span><span class="info-value warn">{{ summary.warnings }}</span></div>
+            <div class="info-row"><span class="info-label">Info</span><span class="info-value info">{{ summary.info }}</span></div>
+          </div>
+        } @else {
+          <div class="no-data glass-panel">
+            <span class="material-symbols-outlined">info</span>
+            <p>No log file loaded. Open a log in Log Explorer first.</p>
+          </div>
+        }
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-title">Quick Actions</h3>
+        <div class="chips">
+          @for (action of quickActions; track action) {
+            <button class="chip" (click)="onQuickAction(action)" [disabled]="isTyping()">
+              {{ action }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-title">About</h3>
+        <p class="about-text">
+          This agent uses GitHub Models API to analyze log files. It can summarize errors, detect patterns, and explain warnings.
+        </p>
+      </div>
+    </aside>
+  }
 </div>
