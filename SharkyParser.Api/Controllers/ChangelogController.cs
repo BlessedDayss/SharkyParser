@@ -18,9 +18,20 @@ public class ChangelogController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<string>> GetChangelog()
     {
-        var path = Path.Combine(_env.ContentRootPath, "Changelog.md");
-        if (!System.IO.File.Exists(path))
+        // 1. Solution root (single source of truth) 2. Project dir 3. Output dir
+        var solutionPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "Changelog.md"));
+        var projectPath = Path.Combine(_env.ContentRootPath, "Changelog.md");
+        var outputPath = Path.Combine(AppContext.BaseDirectory, "Changelog.md");
+
+        var path = System.IO.File.Exists(solutionPath) ? solutionPath
+            : System.IO.File.Exists(projectPath) ? projectPath
+            : System.IO.File.Exists(outputPath) ? outputPath
+            : null;
+
+        if (path == null)
         {
+            _logger.LogWarning("Changelog.md not found. Checked: {Solution}, {Project}, {Output}",
+                solutionPath, projectPath, outputPath);
             return Ok("# Changelog\n\nNo changelog available.");
         }
         try

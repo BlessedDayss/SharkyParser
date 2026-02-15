@@ -5,6 +5,10 @@
   </header>
 
   <div class="changelog-content">
-    <pre class="markdown-content">{{ content() }}</pre>
+    @if (loading()) {
+      <p class="loading-text">Loading changelog...</p>
+    } @else {
+      <div class="markdown-content" [innerHTML]="htmlContent()"></div>
+    }
   </div>
 </div>

@@ -1,5 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
+import { marked } from 'marked';
 import { ChangelogService } from '../../core/services/changelog.service';
 
 @Component({
@@ -11,13 +13,23 @@ import { ChangelogService } from '../../core/services/changelog.service';
 })
 export class ChangelogComponent implements OnInit {
   private changelogService = inject(ChangelogService);
+  private sanitizer = inject(DomSanitizer);
 
-  content = signal<string>('');
+  htmlContent = signal<SafeHtml>('');
+  loading = signal<boolean>(true);
 
   ngOnInit() {
     this.changelogService.getChangelog().subscribe({
-      next: (text) => this.content.set(text),
-      error: () => this.content.set('# Changelog\n\nFailed to load changelog.')
+      next: (text) => {
+        const html = marked.parse(text, { async: false }) as string;
+        this.htmlContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
+        this.loading.set(false);
+      },
+      error: () => {
+        const html = marked.parse('# Changelog\n\nFailed to load changelog.', { async: false }) as string;
+        this.htmlContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
+        this.loading.set(false);
+      }
     });
   }
 }

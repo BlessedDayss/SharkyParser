@@ -1,9 +1,17 @@
 @use '../../../styles/variables';
 
+:host {
+  display: block;
+  min-height: 100%;
+  padding: 0;
+}
+
 .changelog {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .header {
@@ -30,6 +38,7 @@
   border-radius: 16px;
   padding: 24px;
   overflow: auto;
+  min-height: 200px;
   transition: all 0.3s;
 
   &:hover {
@@ -38,11 +47,65 @@
   }
 }
 
-.markdown-content {
-  font-family: var(--font-mono);
+.loading-text {
+  color: var(--text-dim);
   font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-secondary);
-  white-space: pre-wrap;
   margin: 0;
+}
+
+.markdown-content {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: break-word;
+
+  :deep(h1) {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 24px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-glass);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  :deep(h2) {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-teal);
+    margin: 20px 0 12px;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  :deep(h3) {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 16px 0 8px;
+  }
+
+  :deep(p) {
+    margin: 0 0 12px;
+  }
+
+  :deep(ul) {
+    margin: 0 0 16px;
+    padding-left: 20px;
+  }
+
+  :deep(li) {
+    margin-bottom: 4px;
+  }
+
+  :deep(hr) {
+    border: none;
+    border-top: 1px solid var(--border-glass);
+    margin: 24px 0;
+  }
 }
