@@ -3,55 +3,64 @@
 [![Release](https://img.shields.io/github/v/release/BlessedDayss/SharkyParser?style=flat-square&color=3399ff)](https://github.com/BlessedDayss/SharkyParser/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Sharky Parser PRO** is a high-performance log management suite designed for developers and DevOps engineers. It combines a **.NET 8** API backend with an **Angular** web frontend.
+**Sharky Parser PRO** is a high-performance log analysis system for developers and DevOps. It combines .NET 8 API, Angular web client, and CLI.
 
 ---
 
-## Key Features
+## Tech Stack
 
-### Modern Web Client (Angular)
-- **Dark Theme UI**: Tech-oriented interface with teal accents and glowing effects.
-- **Log Explorer**: Upload and parse log files with search, filtering, and level-based navigation.
-- **Analytics Dashboard**: Visualize log volume, health status, and top sources.
-- **Changelog & Settings**: Built-in changelog and quick links to GitHub.
-
-### High-Performance Core (.NET 8)
-- **Intelligent Parsing Engine**: Supports multiline messages, complex stack traces, and automatic log level detection.
-- **Broad Compatibility**: Specialized parsers for:
-  - Installation Logs (with support for varied timestamp formats)
-  - IIS Logs
-  - Update Logs
-  - RabbitMQ Logs (coming soon)
-
-### Command Line Interface (CLI)
-- **Table Mode**: ASCII tables for terminal inspection.
-- **Embedded Mode**: Pipe-delimited output for integration with other tools.
-- **Health Analysis**: Quick metrics (Total, Errors, Warnings) at a glance.
+| Component | Technologies |
+|-----------|--------------|
+| Backend | .NET 8, ASP.NET Core |
+| Frontend | Angular 19, TypeScript |
+| CLI | .NET 8, Spectre.Console |
+| Core | .NET 8, shared parsing logic |
 
 ---
 
-## Quick Start
+## Project Structure
+
+```
+SharkyParserDev/
+├── SharkyParser.Core/     # Core: parsers, models, analyzers
+├── SharkyParser.Api/      # REST API (http://localhost:5000)
+├── SharkyParser.Web/      # Angular SPA (http://localhost:4200)
+├── SharkyParser.Cli/      # Console utility
+├── SharkyParser.Tests/    # Tests
+├── Changelog.md           # Changelog
+└── README.md
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
+
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Node.js 18+](https://nodejs.org/)
 
-### 1. Run the API
+### 1. API (backend)
+
 ```bash
 cd SharkyParser.Api
 dotnet run
 ```
-The API runs at `http://localhost:5000`.
 
-### 2. Run the Web App
+API runs at **http://localhost:5000**.
+
+### 2. Web (frontend)
+
 ```bash
 cd SharkyParser.Web
 npm install
 npm start
 ```
-The app runs at `http://localhost:4200` with proxy to the API.
 
-### 3. CLI Usage (optional)
+App runs at **http://localhost:4200**. Proxy forwards `/api/*` to the API.
+
+### 3. CLI (optional)
+
 ```bash
 cd SharkyParser.Cli
 dotnet run -- parse path/to/log.txt --type Installation
@@ -59,16 +68,56 @@ dotnet run -- parse path/to/log.txt --type Installation
 
 ---
 
+## Quick Start (both services)
+
+```bash
+# Terminal 1 — API
+cd SharkyParser.Api && dotnet run
+
+# Terminal 2 — Web
+cd SharkyParser.Web && npm install && npm start
+```
+
+Open **http://localhost:4200** in your browser.
+
+---
+
+## Features
+
+### Web UI
+
+- **Log Explorer** — upload logs, search, filter by level (INFO, ERROR, WARN, DEBUG)
+- **Analytics** — charts for log volume and sources
+- **Changelog** — release history in Markdown format
+- **Settings** — app configuration
+- **Dark theme** — glassmorphism, neon accents, custom scrollbar
+
+### API
+
+- `POST /api/logs/parse` — parse uploaded file
+- `GET /api/logs/health` — health check
+- `GET /api/changelog` — changelog text
+
+### Supported Log Types
+
+- Installation Logs
+- Update Logs
+- IIS Logs
+- RabbitMQ (coming soon)
+
+---
+
 ## Architecture
 
-- **SharkyParser.Core**: Parsing logic, models, and analyzers.
-- **SharkyParser.Api**: ASP.NET Core REST API using Core for parsing. Accepts file uploads, returns parsed entries and statistics.
-- **SharkyParser.Web**: Angular SPA with Log Explorer, Analytics, Settings, and Changelog.
+- **SharkyParser.Core** — parsers, models, analyzers
+- **SharkyParser.Api** — REST API, accepts files, returns parsed entries and statistics
+- **SharkyParser.Web** — Angular SPA with proxy to API
+- **SharkyParser.Cli** — `sharky parse` for terminal
 
 ---
 
 ## License
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+MIT License. See `LICENSE`.
 
-**Sharky Parser** - *Bite through your logs with style.*
+**Sharky Parser** — *Bite through your logs with style.*
