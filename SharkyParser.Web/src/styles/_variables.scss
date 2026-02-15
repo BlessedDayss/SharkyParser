@@ -1,0 +1,34 @@
+// SharkyParser design system - matches landing reference
+:root {
+  --sharky-bg: #0a0c10;
+  --sharky-accent: #00f2ff;
+  --sharky-aqua: #00d1ff;
+  --sharky-glass: rgba(255, 255, 255, 0.03);
+  --sharky-border: rgba(0, 242, 255, 0.2);
+  --sharky-border-dim: rgba(0, 242, 255, 0.1);
+
+  --bg-primary: #0a0c10;
+  --bg-secondary: #0d0f14;
+  --accent-teal: #00f2ff;
+  --accent-teal-dim: rgba(0, 242, 255, 0.1);
+  --accent-aqua: #00d1ff;
+  --accent-secondary: #6366f1;
+  --accent-purple: #7000ff;
+  --surface-card: rgba(10, 12, 16, 0.7);
+  --surface-glass: rgba(255, 255, 255, 0.03);
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --border-glow: rgba(0, 242, 255, 0.3);
+  --border-glass: rgba(255, 255, 255, 0.05);
+  --error: #ff3333;
+  --warning: #ffaa00;
+  --success: #00ff88;
+  --shadow-glow: 0 0 20px rgba(0, 242, 255, 0.15);
+  --shadow-glow-strong: 0 0 30px rgba(0, 242, 255, 0.3);
+  --shadow-accent: 0 0 15px rgba(0, 242, 255, 0.4);
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', 'JetBrains Mono', monospace;
+}

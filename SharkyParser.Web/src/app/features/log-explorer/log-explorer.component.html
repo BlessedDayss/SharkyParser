@@ -1,0 +1,123 @@
+<div class="log-explorer">
+  <header class="header-row">
+    <div>
+      <h2 class="title">Log Explorer</h2>
+      <p class="subtitle">Categorize and navigate through thousands of logs</p>
+    </div>
+    <div class="file-info font-mono">{{ fileName() }}</div>
+  </header>
+
+  @if (statistics(); as stats) {
+    <div class="stats-grid">
+      <button class="stat-card total" [class.active]="levelFilter() === 'ALL'" (click)="setLevelFilter('ALL')">
+        <span class="stat-label">Total Entries</span>
+        <span class="stat-value">{{ stats.total }}</span>
+      </button>
+      <button class="stat-card error" [class.active]="levelFilter() === 'ERROR'" (click)="setLevelFilter('ERROR')">
+        <span class="stat-label">Errors</span>
+        <span class="stat-value">{{ stats.errors }}</span>
+      </button>
+      <button class="stat-card warning" [class.active]="levelFilter() === 'WARN'" (click)="setLevelFilter('WARN')">
+        <span class="stat-label">Warnings</span>
+        <span class="stat-value">{{ stats.warnings }}</span>
+      </button>
+      <button class="stat-card info" [class.active]="levelFilter() === 'INFO'" (click)="setLevelFilter('INFO')">
+        <span class="stat-label">Info logs</span>
+        <span class="stat-value">{{ stats.info }}</span>
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading">Parsing...</div>
+  }
+
+  @if (error()) {
+    <div class="error-msg">{{ error() }}</div>
+  }
+
+  @if (entries().length > 0) {
+    <div class="log-viewer-container">
+      <div class="viewer-header">
+        <input
+          type="text"
+          class="search-bar"
+          placeholder="Search logs/messages..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+        <select
+          class="level-select"
+          [ngModel]="levelFilter()"
+          (ngModelChange)="levelFilter.set($event)"
+        >
+          <option value="ALL">All Levels</option>
+          <option value="ERROR">Errors</option>
+          <option value="WARN">Warnings</option>
+          <option value="INFO">Information</option>
+          <option value="DEBUG">Debug</option>
+        </select>
+      </div>
+      <div class="table-wrapper">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th style="width: 180px">Timestamp</th>
+              <th style="width: 100px">Level</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of filteredEntries().slice(0, 10000); track entry.id) {
+              <tr class="log-row" (click)="openModal(entry)">
+                <td class="timestamp">{{ formatTimestamp(entry.timestamp) }}</td>
+                <td>
+                  <span class="level-tag" [class]="'level-' + entry.level.toLowerCase()">{{ entry.level }}</span>
+                </td>
+                <td class="message">{{ entry.message }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (!loading() && entries().length === 0 && !error()) {
+    <div class="empty-state glass-panel glow-border">
+      <div class="empty-badge">Parsing at the Speed of Light</div>
+      <p>Select a log file to get started</p>
+      <p class="hint">Use the "Get Started" button in the sidebar</p>
+    </div>
+  }
+</div>
+
+@if (showModal() && selectedEntry(); as entry) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Log Details</h3>
+        <button class="close-btn" (click)="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <strong>Timestamp:</strong> {{ formatTimestamp(entry.timestamp) }}
+        </div>
+        <div class="detail-section">
+          <strong>Level:</strong>
+          <span class="level-tag" [class]="'level-' + entry.level.toLowerCase()">{{ entry.level }}</span>
+        </div>
+        <div class="detail-section">
+          <strong>Message:</strong>
+          <pre class="message-pre">{{ entry.message }}</pre>
+        </div>
+        @if (entry.stackTrace) {
+          <div class="detail-section">
+            <strong>Stack Trace:</strong>
+            <pre class="stack-pre">{{ entry.stackTrace }}</pre>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

@@ -4,153 +4,116 @@ on:
   push:
     branches: [ main ]
 
-
-
 jobs:
-  release:
+  build:
     if: startsWith(github.event.head_commit.message, 'v')
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-      packages: write
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: SharkyParser-linux
-            asset_name: SharkyParser-linux.AppImage
-          - os: windows-latest
-            artifact_name: SharkyParser-win
-            asset_name: SharkyParser-win.exe
-          - os: macos-latest
-            artifact_name: SharkyParser-mac
-            asset_name: SharkyParser-mac.dmg
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Build Solution
-      run: dotnet build --configuration Release --no-restore
-
-    - name: Run Tests
-      run: dotnet test --configuration Release --no-build --verbosity normal
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-        cache-dependency-path: SharkyParser.Ui/package-lock.json
-
-    - name: Extract Version
-      id: get_version
-      shell: bash
-      env:
-        COMMIT_MSG: ${{ github.event.head_commit.message }}
-      run: |
-        VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1 | sed 's/v//' || echo "1.1.8")
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Detected version: $VERSION"
-
-    - name: Update Project Versions
-      shell: bash
-      run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        echo "Updating to version: $VERSION"
-        
-        # Update .csproj using Node.js for cross-platform compatibility
-        # Using process.env to avoid shell interpolation issues inside the script
-        export VERSION
-        node -e "
-          const fs = require('fs');
-          const path = 'SharkyParser.Cli/SharkyParser.Cli.csproj';
-          let content = fs.readFileSync(path, 'utf8');
-          const version = process.env.VERSION;
-          content = content.replace(/<Version>.*<\/Version>/, '<Version>' + version + '</Version>');
-          fs.writeFileSync(path, content);
-        "
-        
-        # Update package.json - allow same version to prevent exit code 1
-        cd SharkyParser.Ui
-        npm version $VERSION --no-git-tag-version --allow-same-version
-
-    - name: Build and Pack NuGet (Ubuntu only)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        dotnet pack SharkyParser.Cli/SharkyParser.Cli.csproj -c Release -o ./nupkg
-        dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --api-key "$GITHUB_TOKEN"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: true
-
-    - name: Install Node dependencies
-      run: |
-        cd SharkyParser.Ui
-        npm ci --ignore-scripts
-
-    - name: Build Electron App
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd SharkyParser.Ui
-        npm run build:${{ matrix.os == 'windows-latest' && 'win' || (matrix.os == 'macos-latest' && 'mac' || 'linux') }} -- -p never
-
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: |
-          SharkyParser.Ui/dist/*.exe
-          SharkyParser.Ui/dist/*.dmg
-          SharkyParser.Ui/dist/*.AppImage
-          SharkyParser.Ui/dist/*.zip
-          SharkyParser.Ui/dist/*.yml
-
-  create_release:
-    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
+
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build Solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test SharkyParser.sln --configuration Release --no-build --verbosity normal
+
+      - name: Publish API
+        run: dotnet publish SharkyParser.Api/SharkyParser.Api.csproj -c Release -o ./publish/api
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: SharkyParser.Web/package-lock.json
+
+      - name: Install Angular dependencies
+        run: |
+          cd SharkyParser.Web
+          npm ci
+
+      - name: Build Angular
+        run: |
+          cd SharkyParser.Web
+          npm run build
+
       - name: Extract Version
         id: get_version
         shell: bash
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          # Robustly extract full tag (e.g., v1.2.3)
-          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || echo "v1.1.8")
+          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || echo "v1.2.0")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Download all artifacts
+      - name: Upload API artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sharkyparser-api
+          path: publish/api
+
+      - name: Upload Web artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sharkyparser-web
+          path: SharkyParser.Web/dist
+
+  create_release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: get_version
+        shell: bash
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || echo "v1.2.0")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download API artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: sharkyparser-api
+          path: api
 
-      - name: Create GitHub Release
+      - name: Download Web artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sharkyparser-web
+          path: web
+
+      - name: Create archives
+        run: |
+          cd api && zip -r ../sharkyparser-api.zip . && cd ..
+          cd web && zip -r ../sharkyparser-web.zip . && cd ..
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.VERSION }}
           name: Release ${{ steps.get_version.outputs.VERSION }}
           files: |
-            artifacts/**/*.exe
-            artifacts/**/*.dmg
-            artifacts/**/*.AppImage
-            artifacts/**/*.zip
-            artifacts/**/latest*.yml
+            sharkyparser-api.zip
+            sharkyparser-web.zip
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

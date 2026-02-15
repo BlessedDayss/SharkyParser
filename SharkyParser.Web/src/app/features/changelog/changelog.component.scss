@@ -1,0 +1,48 @@
+@use '../../../styles/variables';
+
+.changelog {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  .title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.03em;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 8px 0 0;
+  }
+}
+
+.changelog-content {
+  background: var(--surface-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--sharky-border-dim);
+  border-radius: 16px;
+  padding: 24px;
+  overflow: auto;
+  transition: all 0.3s;
+
+  &:hover {
+    border-color: rgba(0, 242, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+  }
+}
+
+.markdown-content {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  margin: 0;
+}

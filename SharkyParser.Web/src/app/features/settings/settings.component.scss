@@ -1,0 +1,94 @@
+@use '../../../styles/variables';
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  .title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.03em;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 8px 0 0;
+  }
+}
+
+.dash-card {
+  background: var(--surface-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--sharky-border-dim);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s;
+
+  &:hover {
+    border-color: rgba(0, 242, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 16px;
+    color: var(--text-primary);
+  }
+}
+
+.about-text {
+  color: var(--text-dim);
+  line-height: 1.6;
+  font-size: 14px;
+  margin-bottom: 24px;
+
+  .copyright {
+    margin-top: 16px;
+    font-size: 12px;
+  }
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn, .primary-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+
+  &:hover {
+    border-color: rgba(0, 242, 255, 0.3);
+    color: var(--accent-teal);
+  }
+}
+
+.primary-btn {
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  color: var(--accent-teal);
+
+  &:hover {
+    background: var(--accent-teal);
+    color: black;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
+  }
+}
