@@ -1,5 +1,5 @@
 using FluentAssertions;
-using SharkyParser.Cli.Infrastructure;
+using SharkyParser.Core.Infrastructure;
 
 namespace SharkyParser.Tests.Infrastructure;
 
@@ -11,7 +11,7 @@ public class AppFileLoggerTests
     {
         var logDir = Path.Combine(Path.GetTempPath(), "SharkyParserTests", Guid.NewGuid().ToString("N"));
         var logPath = Path.Combine(logDir, "app.log");
-        var logger = new AppFileLogger(logPath);
+        var logger = new FileAppLogger(logPath, isFullPath: true);
 
         try
         {
@@ -59,7 +59,7 @@ public class AppFileLoggerTests
         File.WriteAllText(logPath, "existing");
         File.SetAttributes(logPath, FileAttributes.ReadOnly);
 
-        var logger = new AppFileLogger(logPath);
+        var logger = new FileAppLogger(logPath, isFullPath: true);
 
         var originalError = Console.Error;
         var errorWriter = new StringWriter();
@@ -77,6 +77,6 @@ public class AppFileLoggerTests
             Directory.Delete(logDir, recursive: true);
         }
 
-        errorWriter.ToString().Should().Contain("Failed to log");
+        errorWriter.ToString().Should().Contain("Failed to write log");
     }
 }

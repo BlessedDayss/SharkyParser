@@ -1,14 +1,15 @@
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using SharkyParser.Api.Interfaces;
+using SharkyParser.Api.Models;
 
 namespace SharkyParser.Api.Services;
 
 /// <summary>
 /// Manages GitHub OAuth Device Flow authentication.
 /// Token is stored in memory for the lifetime of the application.
+/// Implements IGitHubAuthService for proper dependency inversion.
 /// </summary>
-public sealed class GitHubAuthService
+public sealed class GitHubAuthService : IGitHubAuthService
 {
     private readonly ILogger<GitHubAuthService> _logger;
     private readonly IConfiguration _config;
@@ -41,13 +42,16 @@ public sealed class GitHubAuthService
         }
     }
 
+    /// <inheritdoc />
     public string? AccessToken => _accessToken;
+
+    /// <inheritdoc />
     public bool IsAuthenticated => !string.IsNullOrEmpty(_accessToken);
 
-    /// <summary>
-    /// Step 1: Request a device code from GitHub.
-    /// Returns user_code and verification_uri for the user.
-    /// </summary>
+    /// <inheritdoc />
+    public int PollInterval => _pollInterval;
+
+    /// <inheritdoc />
     public async Task<DeviceCodeResponse> RequestDeviceCodeAsync(CancellationToken ct = default)
     {
         var clientId = _config["GitHub:ClientId"] ?? DefaultClientId;
@@ -80,10 +84,7 @@ public sealed class GitHubAuthService
         );
     }
 
-    /// <summary>
-    /// Step 2: Poll GitHub for the access token after user has entered the code.
-    /// Returns the status of the authorization.
-    /// </summary>
+    /// <inheritdoc />
     public async Task<PollResult> PollForTokenAsync(CancellationToken ct = default)
     {
         if (IsAuthenticated)
@@ -132,37 +133,11 @@ public sealed class GitHubAuthService
         };
     }
 
-    /// <summary>
-    /// Logout — clear the stored token.
-    /// </summary>
+    /// <inheritdoc />
     public void Logout()
     {
         _accessToken = null;
         _pendingDeviceCode = null;
         _logger.LogInformation("GitHub token cleared (logout)");
     }
-
-    public int PollInterval => _pollInterval;
-}
-
-// ── DTOs ───────────────────────────────────────────────────
-
-public record DeviceCodeResponse(string UserCode, string VerificationUri, int ExpiresIn);
-public record PollResult(string Status, string Message);
-
-internal class DeviceCodeRaw
-{
-    [JsonPropertyName("device_code")] public string? DeviceCode { get; set; }
-    [JsonPropertyName("user_code")] public string? UserCode { get; set; }
-    [JsonPropertyName("verification_uri")] public string? VerificationUri { get; set; }
-    [JsonPropertyName("expires_in")] public int ExpiresIn { get; set; }
-    [JsonPropertyName("interval")] public int Interval { get; set; }
-}
-
-internal class TokenPollRaw
-{
-    [JsonPropertyName("access_token")] public string? AccessToken { get; set; }
-    [JsonPropertyName("token_type")] public string? TokenType { get; set; }
-    [JsonPropertyName("scope")] public string? Scope { get; set; }
-    [JsonPropertyName("error")] public string? Error { get; set; }
 }

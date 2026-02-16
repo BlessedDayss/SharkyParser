@@ -1,17 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
-using SharkyParser.Api.Services;
+using SharkyParser.Api.DTOs;
+using SharkyParser.Api.Interfaces;
 
 namespace SharkyParser.Api.Controllers;
 
+/// <summary>
+/// Handles AI agent chat and GitHub OAuth Device Flow authentication.
+/// Depends on abstractions (interfaces) rather than concrete services.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AgentController : ControllerBase
 {
-    private readonly CopilotAgentService _agentService;
-    private readonly GitHubAuthService _authService;
+    private readonly ICopilotAgentService _agentService;
+    private readonly IGitHubAuthService _authService;
     private readonly ILogger<AgentController> _logger;
 
-    public AgentController(CopilotAgentService agentService, GitHubAuthService authService, ILogger<AgentController> logger)
+    public AgentController(
+        ICopilotAgentService agentService,
+        IGitHubAuthService authService,
+        ILogger<AgentController> logger)
     {
         _agentService = agentService;
         _authService = authService;
@@ -104,5 +112,3 @@ public class AgentController : ControllerBase
         });
     }
 }
-
-public record ChatRequest(string Message, string? LogContext = null);

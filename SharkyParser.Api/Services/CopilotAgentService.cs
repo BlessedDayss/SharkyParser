@@ -1,21 +1,30 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using SharkyParser.Api.Interfaces;
+using SharkyParser.Api.Models;
 
 namespace SharkyParser.Api.Services;
 
-public sealed class CopilotAgentService
+/// <summary>
+/// Manages AI agent interactions via GitHub Models API.
+/// Implements ICopilotAgentService for proper dependency inversion.
+/// </summary>
+public sealed class CopilotAgentService : ICopilotAgentService
 {
     private readonly ILogger<CopilotAgentService> _logger;
     private readonly IConfiguration _config;
     private readonly HttpClient _http;
-    private readonly GitHubAuthService _auth;
+    private readonly IGitHubAuthService _auth;
 
     private const string DefaultEndpoint = "https://models.inference.ai.azure.com";
     private const string DefaultModel = "gpt-4o";
 
-    public CopilotAgentService(ILogger<CopilotAgentService> logger, IConfiguration config, IHttpClientFactory httpFactory, GitHubAuthService auth)
+    public CopilotAgentService(
+        ILogger<CopilotAgentService> logger,
+        IConfiguration config,
+        IHttpClientFactory httpFactory,
+        IGitHubAuthService auth)
     {
         _logger = logger;
         _config = config;
@@ -23,9 +32,7 @@ public sealed class CopilotAgentService
         _auth = auth;
     }
 
-    /// <summary>
-    /// Returns the current auth status.
-    /// </summary>
+    /// <inheritdoc />
     public AuthStatus GetAuthStatus()
     {
         return new AuthStatus(
@@ -36,6 +43,7 @@ public sealed class CopilotAgentService
         );
     }
 
+    /// <inheritdoc />
     public async Task<string> ChatAsync(string message, string? logContext, CancellationToken ct = default)
     {
         var token = _auth.AccessToken;
@@ -54,14 +62,14 @@ public sealed class CopilotAgentService
             Model = model,
             Messages =
             [
-                new ChatMsg("system", systemPrompt),
-                new ChatMsg("user", message)
+                new ChatMessage("system", systemPrompt),
+                new ChatMessage("user", message)
             ],
             MaxTokens = 2048,
             Temperature = 0.3
         };
 
-        var json = JsonSerializer.Serialize(body, JsonCtx.Default.ChatCompletionRequest);
+        var json = JsonSerializer.Serialize(body, ChatJsonContext.Default.ChatCompletionRequest);
 
         var request = new HttpRequestMessage(HttpMethod.Post, $"{endpoint}/chat/completions")
         {
@@ -78,7 +86,7 @@ public sealed class CopilotAgentService
                 var errBody = await response.Content.ReadAsStringAsync(ct);
                 _logger.LogWarning("GitHub Models API returned {Status}: {Body}", (int)response.StatusCode, errBody);
 
-                if ((int)response.StatusCode == 401 || (int)response.StatusCode == 403)
+                if ((int)response.StatusCode is 401 or 403)
                 {
                     return "⚠ Authentication failed. Your GitHub Token may be invalid or expired.\n\n" +
                            "Please generate a new token at https://github.com/settings/tokens and update your configuration.";
@@ -88,7 +96,7 @@ public sealed class CopilotAgentService
             }
 
             var resultJson = await response.Content.ReadAsStringAsync(ct);
-            var result = JsonSerializer.Deserialize(resultJson, JsonCtx.Default.ChatCompletionResponse);
+            var result = JsonSerializer.Deserialize(resultJson, ChatJsonContext.Default.ChatCompletionResponse);
 
             var content = result?.Choices?.FirstOrDefault()?.Message?.Content;
             return content ?? "No response from AI model.";
@@ -129,41 +137,3 @@ public sealed class CopilotAgentService
         return prompt;
     }
 }
-
-// ── JSON models ────────────────────────────────────────────
-
-public record AuthStatus(bool IsAuthenticated, string Message);
-
-public class ChatCompletionRequest
-{
-    [JsonPropertyName("model")] public string Model { get; set; } = "";
-    [JsonPropertyName("messages")] public List<ChatMsg> Messages { get; set; } = [];
-    [JsonPropertyName("max_tokens")] public int MaxTokens { get; set; }
-    [JsonPropertyName("temperature")] public double Temperature { get; set; }
-}
-
-public class ChatMsg
-{
-    [JsonPropertyName("role")] public string Role { get; set; }
-    [JsonPropertyName("content")] public string Content { get; set; }
-
-    public ChatMsg(string role, string content)
-    {
-        Role = role;
-        Content = content;
-    }
-}
-
-public class ChatCompletionResponse
-{
-    [JsonPropertyName("choices")] public List<ChatChoice>? Choices { get; set; }
-}
-
-public class ChatChoice
-{
-    [JsonPropertyName("message")] public ChatMsg? Message { get; set; }
-}
-
-[JsonSerializable(typeof(ChatCompletionRequest))]
-[JsonSerializable(typeof(ChatCompletionResponse))]
-internal partial class JsonCtx : JsonSerializerContext { }

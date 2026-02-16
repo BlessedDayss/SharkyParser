@@ -18,7 +18,6 @@ public class ChangelogController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<string>> GetChangelog()
     {
-        // 1. Solution root (single source of truth) 2. Project dir 3. Output dir
         var solutionPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "Changelog.md"));
         var projectPath = Path.Combine(_env.ContentRootPath, "Changelog.md");
         var outputPath = Path.Combine(AppContext.BaseDirectory, "Changelog.md");
