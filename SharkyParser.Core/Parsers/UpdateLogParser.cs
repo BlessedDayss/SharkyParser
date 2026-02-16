@@ -57,6 +57,8 @@ public class UpdateLogParser : BaseLogParser
 
     private static DateTime ParseTimestamp(string timestamp)
     {
-        return DateTime.TryParse(timestamp, out var dt) ? dt : DateTime.Now;
+        return DateTime.TryParse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) 
+            ? dt 
+            : DateTime.Now;
     }
 }
