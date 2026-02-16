@@ -16,6 +16,7 @@ builder.Services.AddTransient<UpdateLogParser>();
 builder.Services.AddTransient<IISLogParser>();
 builder.Services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
 builder.Services.AddScoped<ILogParsingService, LogParsingService>();
+builder.Services.AddScoped<IChangelogService, ChangelogService>();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IGitHubAuthService, GitHubAuthService>();
 builder.Services.AddSingleton<ICopilotAgentService, CopilotAgentService>();
