@@ -31,16 +31,20 @@ jobs:
           TOTAL=$(echo "$RESPONSE" | jq '.total')
           echo "Found $TOTAL open issues in SonarCloud"
 
-          if [ "$TOTAL" -eq 0 ]; then
+          if [ "$TOTAL" -eq 0 ] || [ "$TOTAL" = "null" ]; then
             echo "No issues found. Exiting."
             exit 0
           fi
 
+          CREATED=0
+          SKIPPED=0
+          FAILED=0
+
           echo "$RESPONSE" | jq -c '.issues[]' | while read -r ISSUE; do
             SONAR_KEY=$(echo "$ISSUE" | jq -r '.key')
             MESSAGE=$(echo "$ISSUE" | jq -r '.message')
-            SEVERITY=$(echo "$ISSUE" | jq -r '.severity')
-            TYPE=$(echo "$ISSUE" | jq -r '.type')
+            SEVERITY=$(echo "$ISSUE" | jq -r '.severity // "MINOR"')
+            TYPE=$(echo "$ISSUE" | jq -r '.type // "CODE_SMELL"')
             COMPONENT=$(echo "$ISSUE" | jq -r '.component' | sed "s|${SONAR_PROJECT}:||")
             LINE=$(echo "$ISSUE" | jq -r '.line // "N/A"')
             RULE=$(echo "$ISSUE" | jq -r '.rule')
@@ -48,63 +52,69 @@ jobs:
 
             # Map SonarCloud type to label
             case "$TYPE" in
-              BUG)            LABEL="bug" ;;
-              VULNERABILITY)  LABEL="security" ;;
-              CODE_SMELL)     LABEL="code-quality" ;;
-              *)              LABEL="sonarcloud" ;;
+              BUG)            TYPE_LABEL="bug" ;;
+              VULNERABILITY)  TYPE_LABEL="security" ;;
+              CODE_SMELL)     TYPE_LABEL="code-quality" ;;
+              *)              TYPE_LABEL="code-quality" ;;
             esac
 
             # Map severity to priority label
             case "$SEVERITY" in
-              BLOCKER|CRITICAL) PRIORITY="priority: high" ;;
-              MAJOR)            PRIORITY="priority: medium" ;;
-              MINOR|INFO)       PRIORITY="priority: low" ;;
-              *)                PRIORITY="priority: low" ;;
+              BLOCKER|CRITICAL) PRIORITY_LABEL="priority: high" ;;
+              MAJOR)            PRIORITY_LABEL="priority: medium" ;;
+              *)                PRIORITY_LABEL="priority: low" ;;
             esac
 
-            TITLE="[SonarCloud] $MESSAGE"
+            TITLE="[SonarCloud] ${MESSAGE}"
 
             # Check if issue already exists (avoid duplicates)
-            EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "\"$SONAR_KEY\" in:body" --state open --json number --jq 'length')
+            EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$SONAR_KEY" --state open --json number --jq 'length' 2>/dev/null || echo "0")
 
             if [ "$EXISTING" -gt 0 ]; then
-              echo "⏭ Skipping (already exists): $MESSAGE"
+              echo "⏭ Skip (exists): $MESSAGE"
+              SKIPPED=$((SKIPPED + 1))
               continue
             fi
 
-            BODY=$(cat <<EOF
-          ## SonarCloud Issue
+            # Build body as a simple string
+            BODY="## SonarCloud Issue
 
-          | Field | Value |
-          |-------|-------|
-          | **Rule** | \`$RULE\` |
-          | **Severity** | $SEVERITY |
-          | **Type** | $TYPE |
-          | **File** | \`$COMPONENT\` |
-          | **Line** | $LINE |
-          | **Effort** | $EFFORT |
+          **Rule:** \`${RULE}\`
+          **Severity:** ${SEVERITY}
+          **Type:** ${TYPE}
+          **File:** \`${COMPONENT}\`
+          **Line:** ${LINE}
+          **Effort:** ${EFFORT}
 
           ### Description
-          $MESSAGE
+          ${MESSAGE}
 
-          ### Links
-          - [View in SonarCloud](https://sonarcloud.io/project/issues?id=$SONAR_PROJECT&open=$SONAR_KEY)
+          [View in SonarCloud](https://sonarcloud.io/project/issues?id=${SONAR_PROJECT}&open=${SONAR_KEY})
 
           ---
           *Auto-generated from SonarCloud analysis*
-          *Sonar Key: $SONAR_KEY*
-          EOF
-          )
+          *Sonar Key: ${SONAR_KEY}*"
 
-            echo "Creating issue: $TITLE"
-            gh issue create \
+            echo "➕ Creating: $TITLE"
+            if gh issue create \
               --repo "$GITHUB_REPOSITORY" \
               --title "$TITLE" \
               --body "$BODY" \
-              --label "$LABEL" \
-              --label "$PRIORITY" \
-              --label "sonarcloud" \
-              2>/dev/null || echo "⚠ Failed to create issue (labels might not exist yet): $TITLE"
+              --label "$TYPE_LABEL" \
+              --label "$PRIORITY_LABEL" \
+              --label "sonarcloud"; then
+              CREATED=$((CREATED + 1))
+            else
+              echo "❌ Failed to create: $TITLE"
+              FAILED=$((FAILED + 1))
+            fi
+
+            # Rate limit protection
+            sleep 1
           done
 
-          echo "Done!"
+          echo ""
+          echo "=== Summary ==="
+          echo "Created: $CREATED"
+          echo "Skipped: $SKIPPED"
+          echo "Failed:  $FAILED"
