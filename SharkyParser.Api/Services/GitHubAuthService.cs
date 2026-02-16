@@ -22,6 +22,9 @@ public sealed class GitHubAuthService : IGitHubAuthService
     // GitHub CLI public OAuth App client ID (public, safe to embed)
     private const string DefaultClientId = "Iv1.b507a08c87ecfe98";
 
+    private const string GitHubDeviceCodeUrl = "https://github.com/login/device/code";
+    private const string GitHubTokenUrl = "https://github.com/login/oauth/access_token";
+
     public GitHubAuthService(ILogger<GitHubAuthService> logger, IConfiguration config, IHttpClientFactory httpFactory)
     {
         _logger = logger;
@@ -62,7 +65,7 @@ public sealed class GitHubAuthService : IGitHubAuthService
             ["scope"] = "read:user"
         });
 
-        var response = await _http.PostAsync("https://github.com/login/device/code", body, ct);
+        var response = await _http.PostAsync(GitHubDeviceCodeUrl, body, ct);
         var json = await response.Content.ReadAsStringAsync(ct);
 
         _logger.LogInformation("Device code response: {Json}", json);
@@ -106,7 +109,7 @@ public sealed class GitHubAuthService : IGitHubAuthService
             ["grant_type"] = "urn:ietf:params:oauth:grant-type:device_code"
         });
 
-        var response = await _http.PostAsync("https://github.com/login/oauth/access_token", body, ct);
+        var response = await _http.PostAsync(GitHubTokenUrl, body, ct);
         var json = await response.Content.ReadAsStringAsync(ct);
 
         _logger.LogInformation("GitHub OAuth poll raw response: {Json}", json);

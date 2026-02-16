@@ -12,24 +12,23 @@ namespace SharkyParser.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IGitHubAuthService _authService;
-    private readonly ICopilotAgentService _agentService;
-    private readonly ILogger<AuthController> _logger;
-
     public AuthController(
         IGitHubAuthService authService,
-        ICopilotAgentService agentService,
         ILogger<AuthController> logger)
     {
         _authService = authService;
-        _agentService = agentService;
         _logger = logger;
     }
 
     [HttpGet("status")]
     public IActionResult AuthStatus()
     {
-        var status = _agentService.GetAuthStatus();
-        return Ok(new { authenticated = status.IsAuthenticated, message = status.Message });
+        var isAuthenticated = _authService.IsAuthenticated;
+        var message = isAuthenticated
+            ? "Authenticated via GitHub."
+            : "Not authenticated. Sign in with GitHub to use the AI Agent.";
+
+        return Ok(new { authenticated = isAuthenticated, message });
     }
 
     [HttpPost("device-code")]

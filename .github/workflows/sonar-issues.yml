@@ -1,9 +1,7 @@
 name: Sync SonarCloud Issues to GitHub
 
 on:
-  workflow_run:
-    workflows: ["SonarQube Cloud Analysis"]
-    types: [completed]
+
   workflow_dispatch:
 
 jobs:

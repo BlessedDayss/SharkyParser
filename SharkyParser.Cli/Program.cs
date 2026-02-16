@@ -36,7 +36,7 @@ public static class Program
         services.AddSingleton<ILogParserRegistry, LogParserRegistry>();
         services.AddSingleton<ILogParserFactory, LogParserFactory>();
         services.AddTransient<UpdateLogParser>();
-        /*services.AddTransient<RabbitLogParser>();*/
+
         services.AddTransient<IISLogParser>();
         services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
         

@@ -48,13 +48,8 @@ public sealed class ChangelogService : IChangelogService
             Path.Combine(AppContext.BaseDirectory, "Changelog.md")
         };
 
-        foreach (var candidate in candidates)
-        {
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
+        var path = candidates.FirstOrDefault(File.Exists);
+        if (path != null) return path;
 
         _logger.LogWarning("Changelog.md not found. Checked: {Paths}", string.Join(", ", candidates));
         return null;
