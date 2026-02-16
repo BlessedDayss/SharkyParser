@@ -31,7 +31,7 @@ export interface PollResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AiAgentService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   chat(message: string, logContext?: string): Observable<string> {
     return this.http

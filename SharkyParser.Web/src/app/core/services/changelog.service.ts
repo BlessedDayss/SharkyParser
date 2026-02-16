@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class ChangelogService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   getChangelog(): Observable<string> {
     return this.http.get('/api/changelog', { responseType: 'text' });

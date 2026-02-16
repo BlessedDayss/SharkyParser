@@ -18,11 +18,11 @@ export interface DisplayMessage extends ChatMessage {
   styleUrl: './ai-agent.component.scss'
 })
 export class AiAgentComponent implements AfterViewChecked, OnInit, OnDestroy {
-  @ViewChild('messagesContainer') private messagesContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('messagesContainer') private readonly messagesContainer!: ElementRef<HTMLDivElement>;
 
-  private agentService = inject(AiAgentService);
-  private logData = inject(LogDataService);
-  private sanitizer = inject(DomSanitizer);
+  private readonly agentService = inject(AiAgentService);
+  private readonly logData = inject(LogDataService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   // ── Auth state ─────────────────────────────────────────
   isAuthenticated = signal(false);
@@ -240,6 +240,6 @@ export class AiAgentComponent implements AfterViewChecked, OnInit, OnDestroy {
     try {
       const el = this.messagesContainer?.nativeElement;
       if (el) el.scrollTop = el.scrollHeight;
-    } catch {}
+    } catch { }
   }
 }

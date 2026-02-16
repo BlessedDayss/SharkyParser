@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 export class FileSelectionService {
   pendingFile = signal<File | null>(null);
 
-  private openPickerSubject = new Subject<void>();
+  private readonly openPickerSubject = new Subject<void>();
   openPicker$ = this.openPickerSubject.asObservable();
 
   requestOpenPicker() {

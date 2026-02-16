@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,10 +16,10 @@ import { LogStatistics } from '../../core/models/parse-result';
   styleUrl: './log-explorer.component.scss'
 })
 export class LogExplorerComponent implements OnInit {
-  private logService = inject(LogService);
-  private fileSelection = inject(FileSelectionService);
-  private logData = inject(LogDataService);
-  private router = inject(Router);
+  private readonly logService = inject(LogService);
+  private readonly fileSelection = inject(FileSelectionService);
+  private readonly logData = inject(LogDataService);
+  private readonly router = inject(Router);
 
   entries = signal<LogEntry[]>([]);
   statistics = signal<LogStatistics | null>(null);

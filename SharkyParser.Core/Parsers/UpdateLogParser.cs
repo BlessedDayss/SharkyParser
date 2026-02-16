@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using System.Globalization;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
 
