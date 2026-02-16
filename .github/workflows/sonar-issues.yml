@@ -1,0 +1,110 @@
+name: Sync SonarCloud Issues to GitHub
+
+on:
+  workflow_run:
+    workflows: ["SonarQube Cloud Analysis"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  sync-issues:
+    name: Create GitHub Issues from SonarCloud
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Fetch SonarCloud issues and create GitHub Issues
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_PROJECT: "BlessedDayss_SharkyParserDev"
+        run: |
+          echo "Fetching issues from SonarCloud..."
+
+          RESPONSE=$(curl -s -u "$SONAR_TOKEN:" \
+            "https://sonarcloud.io/api/issues/search?componentKeys=$SONAR_PROJECT&statuses=OPEN,CONFIRMED&ps=100&resolved=false")
+
+          TOTAL=$(echo "$RESPONSE" | jq '.total')
+          echo "Found $TOTAL open issues in SonarCloud"
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "No issues found. Exiting."
+            exit 0
+          fi
+
+          echo "$RESPONSE" | jq -c '.issues[]' | while read -r ISSUE; do
+            SONAR_KEY=$(echo "$ISSUE" | jq -r '.key')
+            MESSAGE=$(echo "$ISSUE" | jq -r '.message')
+            SEVERITY=$(echo "$ISSUE" | jq -r '.severity')
+            TYPE=$(echo "$ISSUE" | jq -r '.type')
+            COMPONENT=$(echo "$ISSUE" | jq -r '.component' | sed "s|${SONAR_PROJECT}:||")
+            LINE=$(echo "$ISSUE" | jq -r '.line // "N/A"')
+            RULE=$(echo "$ISSUE" | jq -r '.rule')
+            EFFORT=$(echo "$ISSUE" | jq -r '.effort // "N/A"')
+
+            # Map SonarCloud type to label
+            case "$TYPE" in
+              BUG)            LABEL="bug" ;;
+              VULNERABILITY)  LABEL="security" ;;
+              CODE_SMELL)     LABEL="code-quality" ;;
+              *)              LABEL="sonarcloud" ;;
+            esac
+
+            # Map severity to priority label
+            case "$SEVERITY" in
+              BLOCKER|CRITICAL) PRIORITY="priority: high" ;;
+              MAJOR)            PRIORITY="priority: medium" ;;
+              MINOR|INFO)       PRIORITY="priority: low" ;;
+              *)                PRIORITY="priority: low" ;;
+            esac
+
+            TITLE="[SonarCloud] $MESSAGE"
+
+            # Check if issue already exists (avoid duplicates)
+            EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "\"$SONAR_KEY\" in:body" --state open --json number --jq 'length')
+
+            if [ "$EXISTING" -gt 0 ]; then
+              echo "⏭ Skipping (already exists): $MESSAGE"
+              continue
+            fi
+
+            BODY=$(cat <<EOF
+          ## SonarCloud Issue
+
+          | Field | Value |
+          |-------|-------|
+          | **Rule** | \`$RULE\` |
+          | **Severity** | $SEVERITY |
+          | **Type** | $TYPE |
+          | **File** | \`$COMPONENT\` |
+          | **Line** | $LINE |
+          | **Effort** | $EFFORT |
+
+          ### Description
+          $MESSAGE
+
+          ### Links
+          - [View in SonarCloud](https://sonarcloud.io/project/issues?id=$SONAR_PROJECT&open=$SONAR_KEY)
+
+          ---
+          *Auto-generated from SonarCloud analysis*
+          *Sonar Key: $SONAR_KEY*
+          EOF
+          )
+
+            echo "Creating issue: $TITLE"
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --label "$LABEL" \
+              --label "$PRIORITY" \
+              --label "sonarcloud" \
+              2>/dev/null || echo "⚠ Failed to create issue (labels might not exist yet): $TITLE"
+          done
+
+          echo "Done!"
