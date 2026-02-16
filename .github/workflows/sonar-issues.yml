@@ -50,33 +50,22 @@ jobs:
             RULE=$(echo "$ISSUE" | jq -r '.rule')
             EFFORT=$(echo "$ISSUE" | jq -r '.effort // "N/A"')
 
-            # Map SonarCloud type to label
             case "$TYPE" in
               BUG)            TYPE_LABEL="bug" ;;
               VULNERABILITY)  TYPE_LABEL="security" ;;
-              CODE_SMELL)     TYPE_LABEL="code-quality" ;;
               *)              TYPE_LABEL="code-quality" ;;
-            esac
-
-            # Map severity to priority label
-            case "$SEVERITY" in
-              BLOCKER|CRITICAL) PRIORITY_LABEL="priority: high" ;;
-              MAJOR)            PRIORITY_LABEL="priority: medium" ;;
-              *)                PRIORITY_LABEL="priority: low" ;;
             esac
 
             TITLE="[SonarCloud] ${MESSAGE}"
 
-            # Check if issue already exists (avoid duplicates)
             EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$SONAR_KEY" --state open --json number --jq 'length' 2>/dev/null || echo "0")
 
             if [ "$EXISTING" -gt 0 ]; then
-              echo "⏭ Skip (exists): $MESSAGE"
+              echo "⏭ Skip: $MESSAGE"
               SKIPPED=$((SKIPPED + 1))
               continue
             fi
 
-            # Build body as a simple string
             BODY="## SonarCloud Issue
 
           **Rule:** \`${RULE}\`
@@ -92,7 +81,6 @@ jobs:
           [View in SonarCloud](https://sonarcloud.io/project/issues?id=${SONAR_PROJECT}&open=${SONAR_KEY})
 
           ---
-          *Auto-generated from SonarCloud analysis*
           *Sonar Key: ${SONAR_KEY}*"
 
             echo "➕ Creating: $TITLE"
@@ -101,15 +89,13 @@ jobs:
               --title "$TITLE" \
               --body "$BODY" \
               --label "$TYPE_LABEL" \
-              --label "$PRIORITY_LABEL" \
               --label "sonarcloud"; then
               CREATED=$((CREATED + 1))
             else
-              echo "❌ Failed to create: $TITLE"
+              echo "❌ Failed: $TITLE"
               FAILED=$((FAILED + 1))
             fi
 
-            # Rate limit protection
             sleep 1
           done
 
