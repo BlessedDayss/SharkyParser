@@ -7,7 +7,7 @@ import { LogEntry } from '../models/log-entry';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   parse(file: File, logType: string): Observable<ParseResult> {
     const formData = new FormData();
