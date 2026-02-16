@@ -1,15 +1,14 @@
-using System.ComponentModel;
 using SharkyParser.Api.DTOs;
+using SharkyParser.Api.Infrastructure;
 using SharkyParser.Api.Interfaces;
-using SharkyParser.Core;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
 
 namespace SharkyParser.Api.Services;
 
 /// <summary>
-/// Encapsulates all log parsing and analysis logic.
-/// Handles temp file lifecycle, parser resolution, DTO mapping.
+/// Orchestrates log file parsing: temp file management + delegation to Core services.
+/// Mapping is handled by DtoMapper (SRP).
 /// </summary>
 public sealed class LogParsingService : ILogParsingService
 {
@@ -30,11 +29,7 @@ public sealed class LogParsingService : ILogParsingService
     public IReadOnlyList<LogTypeDto> GetAvailableLogTypes()
     {
         return _parserFactory.GetAvailableTypes()
-            .Select(t => new LogTypeDto(
-                (int)t,
-                t.ToString(),
-                GetDescription(t)
-            ))
+            .Select(DtoMapper.ToDto)
             .ToList()
             .AsReadOnly();
     }
@@ -56,10 +51,10 @@ public sealed class LogParsingService : ILogParsingService
 
             _logger.LogFileProcessed(tempPath);
 
-            var entriesDto = entries.Select(MapToDto).ToList();
-            var statsDto = MapToDto(statistics);
-
-            return new ParseResultDto(entriesDto, statsDto);
+            return new ParseResultDto(
+                entries.Select(DtoMapper.ToDto).ToList(),
+                DtoMapper.ToDto(statistics)
+            );
         }
         finally
         {
@@ -68,45 +63,5 @@ public sealed class LogParsingService : ILogParsingService
                 try { File.Delete(tempPath); } catch { /* best-effort cleanup */ }
             }
         }
-    }
-
-    private static LogEntryDto MapToDto(LogEntry entry)
-    {
-        return new LogEntryDto
-        {
-            Timestamp = entry.Timestamp.ToString("O"),
-            Level = entry.Level,
-            Message = entry.Message,
-            Source = entry.Source,
-            StackTrace = entry.StackTrace,
-            LineNumber = entry.LineNumber,
-            FilePath = entry.FilePath,
-            RawData = entry.RawData
-        };
-    }
-
-    private static LogStatisticsDto MapToDto(LogStatistics statistics)
-    {
-        return new LogStatisticsDto(
-            statistics.TotalCount,
-            statistics.ErrorCount,
-            statistics.WarningCount,
-            statistics.InfoCount,
-            statistics.DebugCount,
-            statistics.IsHealthy,
-            statistics.ExtendedData
-        );
-    }
-
-    private static string GetDescription(LogType type)
-    {
-        var field = typeof(LogType).GetField(type.ToString());
-        if (field == null) return type.ToString();
-
-        var attr = field.GetCustomAttributes(typeof(DescriptionAttribute), false)
-            .OfType<DescriptionAttribute>()
-            .FirstOrDefault();
-
-        return attr?.Description ?? type.ToString();
     }
 }

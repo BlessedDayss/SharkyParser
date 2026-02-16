@@ -1,41 +1,31 @@
 using Microsoft.AspNetCore.Mvc;
+using SharkyParser.Api.Interfaces;
 
 namespace SharkyParser.Api.Controllers;
 
+/// <summary>
+/// Returns the project changelog.
+/// All file resolution logic is delegated to IChangelogService (SRP).
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class ChangelogController : ControllerBase
 {
-    private readonly IWebHostEnvironment _env;
+    private readonly IChangelogService _changelogService;
     private readonly ILogger<ChangelogController> _logger;
 
-    public ChangelogController(IWebHostEnvironment env, ILogger<ChangelogController> logger)
+    public ChangelogController(IChangelogService changelogService, ILogger<ChangelogController> logger)
     {
-        _env = env;
+        _changelogService = changelogService;
         _logger = logger;
     }
 
     [HttpGet]
     public async Task<ActionResult<string>> GetChangelog()
     {
-        var solutionPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "Changelog.md"));
-        var projectPath = Path.Combine(_env.ContentRootPath, "Changelog.md");
-        var outputPath = Path.Combine(AppContext.BaseDirectory, "Changelog.md");
-
-        var path = System.IO.File.Exists(solutionPath) ? solutionPath
-            : System.IO.File.Exists(projectPath) ? projectPath
-            : System.IO.File.Exists(outputPath) ? outputPath
-            : null;
-
-        if (path == null)
-        {
-            _logger.LogWarning("Changelog.md not found. Checked: {Solution}, {Project}, {Output}",
-                solutionPath, projectPath, outputPath);
-            return Ok("# Changelog\n\nNo changelog available.");
-        }
         try
         {
-            var content = await System.IO.File.ReadAllTextAsync(path);
+            var content = await _changelogService.GetChangelogAsync();
             return Ok(content);
         }
         catch (Exception ex)
