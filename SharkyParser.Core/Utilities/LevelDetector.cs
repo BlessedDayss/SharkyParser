@@ -42,38 +42,15 @@ public static partial class LevelDetector
             if (IsFalsePositive(line))
                 return LogLevel.Info;
 
-            // Check for exact level matches at the beginning of the line
-            if (line.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("ERR ", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("ERRO ", StringComparison.OrdinalIgnoreCase))
-                return LogLevel.Error;
+            // Check prefixes first (fast path)
+            var prefixLevel = CheckPrefixLevel(line);
+            if (prefixLevel != null)
+                return prefixLevel;
 
-            if (line.StartsWith("WARN", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("WARNING", StringComparison.OrdinalIgnoreCase))
-                return LogLevel.Warn;
-
-            if (line.StartsWith("DEBUG", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("DBG ", StringComparison.OrdinalIgnoreCase))
-                return LogLevel.Debug;
-
-            if (line.StartsWith("TRACE", StringComparison.OrdinalIgnoreCase))
-                return LogLevel.Trace;
-
-            if (line.StartsWith("INFO", StringComparison.OrdinalIgnoreCase))
-                return LogLevel.Info;
-
-            if (line.StartsWith("FATAL", StringComparison.OrdinalIgnoreCase) ||
-                line.StartsWith("CRITICAL", StringComparison.OrdinalIgnoreCase))
-                return LogLevel.Error;
-
-            // Fall back to regex patterns
-            if (ErrorMarkerRegex().IsMatch(line)) return LogLevel.Error;
-            if (WarnMarkerRegex().IsMatch(line)) return LogLevel.Warn;
-            if (DebugMarkerRegex().IsMatch(line)) return LogLevel.Debug;
-            if (TraceMarkerRegex().IsMatch(line)) return LogLevel.Trace;
-            if (InfoMarkerRegex().IsMatch(line)) return LogLevel.Info;
-            if (ErrorKeywordRegex().IsMatch(line)) return LogLevel.Error;
-            if (WarnKeywordRegex().IsMatch(line)) return LogLevel.Warn;
+            // Check regex patterns (slower path)
+            var regexLevel = CheckRegexPatterns(line);
+            if (regexLevel != null)
+                return regexLevel;
 
             return LogLevel.Info;
         }
@@ -81,6 +58,40 @@ public static partial class LevelDetector
         {
             return LogLevel.Info;
         }
+    }
+
+    private static string? CheckPrefixLevel(string line)
+    {
+        if (StartsWithAny(line, "ERROR", "ERR ", "ERRO ", "FATAL", "CRITICAL")) return LogLevel.Error;
+        if (StartsWithAny(line, "WARN", "WARNING")) return LogLevel.Warn;
+        if (StartsWithAny(line, "DEBUG", "DBG ")) return LogLevel.Debug;
+        if (StartsWithAny(line, "TRACE")) return LogLevel.Trace;
+        if (StartsWithAny(line, "INFO")) return LogLevel.Info;
+
+        return null;
+    }
+
+    private static string? CheckRegexPatterns(string line)
+    {
+        if (ErrorMarkerRegex().IsMatch(line)) return LogLevel.Error;
+        if (WarnMarkerRegex().IsMatch(line)) return LogLevel.Warn;
+        if (DebugMarkerRegex().IsMatch(line)) return LogLevel.Debug;
+        if (TraceMarkerRegex().IsMatch(line)) return LogLevel.Trace;
+        if (InfoMarkerRegex().IsMatch(line)) return LogLevel.Info;
+        if (ErrorKeywordRegex().IsMatch(line)) return LogLevel.Error;
+        if (WarnKeywordRegex().IsMatch(line)) return LogLevel.Warn;
+
+        return null;
+    }
+
+    private static bool StartsWithAny(string text, params string[] prefixes)
+    {
+        foreach (var prefix in prefixes)
+        {
+            if (text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     private static bool IsFalsePositive(string line)
