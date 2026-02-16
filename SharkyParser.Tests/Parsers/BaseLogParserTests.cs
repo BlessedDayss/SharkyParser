@@ -31,6 +31,9 @@ public class BaseLogParserTests
             Times.Once);
     }
 
+    private static readonly string[] TestContent = ["first", "", "second"];
+    private static readonly string[] AsyncTestContent = ["first", "second"];
+
     [Fact]
     public void ParseFile_AssignsFilePathAndLineNumbers()
     {
@@ -38,7 +41,7 @@ public class BaseLogParserTests
         var parser = new PassThroughParser(logger.Object);
 
         var path = Path.Combine(Path.GetTempPath(), $"parser_{Guid.NewGuid():N}.log");
-        File.WriteAllLines(path, new[] { "first", "", "second" });
+        File.WriteAllLines(path, TestContent);
 
         try
         {
@@ -64,7 +67,7 @@ public class BaseLogParserTests
         var parser = new PassThroughParser(logger.Object);
 
         var path = Path.Combine(Path.GetTempPath(), $"parser_async_{Guid.NewGuid():N}.log");
-        File.WriteAllLines(path, new[] { "first", "second" });
+        File.WriteAllLines(path, AsyncTestContent);
 
         try
         {

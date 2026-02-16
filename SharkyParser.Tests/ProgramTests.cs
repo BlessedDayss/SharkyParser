@@ -128,7 +128,7 @@ public class ProgramTests
         var services = method!.Invoke(null, null) as IServiceCollection;
         using var provider = services!.BuildServiceProvider();
 
-        var modeDetector = provider.GetService<ApplicationModeDetector>();
+        var modeDetector = provider.GetService<IApplicationModeDetector>();
 
         modeDetector.Should().NotBeNull();
     }
