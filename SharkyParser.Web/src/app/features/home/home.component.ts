@@ -11,8 +11,8 @@ import { FileSelectionService } from '../../core/services/file-selection.service
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
-  private router = inject(Router);
-  private fileSelection = inject(FileSelectionService);
+  private readonly router = inject(Router);
+  private readonly fileSelection = inject(FileSelectionService);
 
   onGetStarted() {
     this.router.navigate(['/logs']);

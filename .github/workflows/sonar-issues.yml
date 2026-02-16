@@ -17,6 +17,9 @@ jobs:
       contents: read
 
     steps:
+      - name: Wait for SonarCloud processing
+        run: sleep 600
+
       - name: Fetch SonarCloud issues and create GitHub Issues
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
