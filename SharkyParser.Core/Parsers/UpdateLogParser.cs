@@ -38,15 +38,16 @@ public class UpdateLogParser : BaseLogParser
         return null;
     }
 
-    private string GetUpdateLevel(string action, string status)
+    private static string GetUpdateLevel(string action, string status)
     {
-        if (status.ToLower() is "failed" or "error")
+        if (status.Equals("failed", StringComparison.OrdinalIgnoreCase) || 
+            status.Equals("error", StringComparison.OrdinalIgnoreCase))
             return "ERROR";
         
-        if (status.ToLower() is "warning")
+        if (status.Equals("warning", StringComparison.OrdinalIgnoreCase))
             return "WARN";
 
-        return action.ToLower() switch
+        return action.ToLowerInvariant() switch
         {
             "installing" or "downloading" => "INFO",
             "completed" or "success" => "INFO",
@@ -54,21 +55,10 @@ public class UpdateLogParser : BaseLogParser
         };
     }
 
-    private DateTime ParseTimestamp(string timestamp)
+    private static DateTime ParseTimestamp(string timestamp)
     {
-        return DateTime.TryParse(timestamp, out var dt) ? dt : DateTime.Now;
-    }
-
-    private LogEntry? FallbackParse(string line)
-    {
-        var level = LevelDetector.Detect(line);
-        return new LogEntry
-        {
-            Timestamp = DateTime.Now,
-            Level = level,
-            Message = line.Trim(),
-            RawData = line,
-            Source = "Update"
-        };
+        return DateTime.TryParse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) 
+            ? dt 
+            : DateTime.Now;
     }
 }
