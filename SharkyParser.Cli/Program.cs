@@ -41,9 +41,10 @@ public static class Program
         services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
         
         services.AddSingleton<IAppLogger, AppFileLogger>(); 
-        services.AddSingleton<ApplicationModeDetector>();
+        services.AddSingleton<IApplicationModeDetector, ApplicationModeDetector>();
         
         services.AddSingleton<ICliModeRunner, CliModeRunner>();
+
         services.AddSingleton<IInteractiveModeRunner, InteractiveModeRunner>();
         services.AddSingleton<IEmbeddedModeRunner, EmbeddedModeRunner>();
         

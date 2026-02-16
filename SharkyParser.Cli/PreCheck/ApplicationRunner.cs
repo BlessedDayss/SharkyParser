@@ -4,7 +4,7 @@ using SharkyParser.Core.Interfaces;
 namespace SharkyParser.Cli;
 
 public class ApplicationRunner(
-    ApplicationModeDetector modeDetector,
+    IApplicationModeDetector modeDetector,
     ICliModeRunner cliRunner,
     IInteractiveModeRunner interactiveRunner,
     IEmbeddedModeRunner embeddedRunner,

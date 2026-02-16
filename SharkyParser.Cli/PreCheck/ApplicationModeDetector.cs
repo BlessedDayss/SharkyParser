@@ -1,3 +1,5 @@
+using SharkyParser.Cli.PreCheck;
+
 namespace SharkyParser.Cli.PreCheck;
 
 public enum ApplicationMode
@@ -7,7 +9,12 @@ public enum ApplicationMode
     Embedded
 }
 
-public class ApplicationModeDetector
+public interface IApplicationModeDetector
+{
+    ApplicationMode DetermineMode(string[] args);
+}
+
+public class ApplicationModeDetector : IApplicationModeDetector
 {
     public ApplicationMode DetermineMode(string[] args)
     {
@@ -19,4 +26,3 @@ public class ApplicationModeDetector
         return args.Length > 0 ? ApplicationMode.Cli : ApplicationMode.Interactive;
     }
 }
-
