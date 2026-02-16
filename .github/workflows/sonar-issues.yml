@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Wait for SonarCloud processing
-        run: sleep 600
+        run: sleep 1200
 
       - name: Fetch SonarCloud issues and create GitHub Issues
         env:

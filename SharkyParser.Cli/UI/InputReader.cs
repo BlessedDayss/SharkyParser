@@ -7,134 +7,200 @@ public static class InputReader
     public static string ReadLineWithHistory(CommandHistory history, string prompt)
     {
         Console.Write(prompt);
-        
-        var input = new StringBuilder();
-        var cursorPosition = 0;
+        var context = new InputReaderContext(history, prompt);
 
         while (true)
         {
             var keyInfo = Console.ReadKey(intercept: true);
-
-            switch (keyInfo.Key)
+            var result = context.ProcessKey(keyInfo);
+            if (result != null)
             {
-                case ConsoleKey.Enter:
-                    Console.WriteLine();
-                    var result = input.ToString();
-                    if (!string.IsNullOrWhiteSpace(result))
-                    {
-                        history.Add(result);
-                    }
-                    history.ResetNavigation();
-                    return result;
-
-                case ConsoleKey.UpArrow:
-                    var previous = history.GetPrevious();
-                    if (previous != null)
-                    {
-                        ClearCurrentLine(prompt, input.Length);
-                        input.Clear();
-                        input.Append(previous);
-                        cursorPosition = input.Length;
-                        Console.Write(prompt + input);
-                    }
-                    break;
-
-                case ConsoleKey.DownArrow:
-                    var next = history.GetNext();
-                    if (next != null)
-                    {
-                        ClearCurrentLine(prompt, input.Length);
-                        input.Clear();
-                        input.Append(next);
-                        cursorPosition = input.Length;
-                        Console.Write(prompt + input);
-                    }
-                    break;
-
-                case ConsoleKey.LeftArrow:
-                    if (cursorPosition > 0)
-                    {
-                        cursorPosition--;
-                        Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-                    }
-                    break;
-
-                case ConsoleKey.RightArrow:
-                    if (cursorPosition < input.Length)
-                    {
-                        cursorPosition++;
-                        Console.SetCursorPosition(Console.CursorLeft + 1, Console.CursorTop);
-                    }
-                    break;
-
-                case ConsoleKey.Home:
-                    Console.SetCursorPosition(prompt.Length, Console.CursorTop);
-                    cursorPosition = 0;
-                    break;
-
-                case ConsoleKey.End:
-                    Console.SetCursorPosition(prompt.Length + input.Length, Console.CursorTop);
-                    cursorPosition = input.Length;
-                    break;
-
-                case ConsoleKey.Backspace:
-                    if (cursorPosition > 0)
-                    {
-                        input.Remove(cursorPosition - 1, 1);
-                        cursorPosition--;
-                        RedrawLine(prompt, input.ToString(), cursorPosition);
-                    }
-                    break;
-
-                case ConsoleKey.Delete:
-                    if (cursorPosition < input.Length)
-                    {
-                        input.Remove(cursorPosition, 1);
-                        RedrawLine(prompt, input.ToString(), cursorPosition);
-                    }
-                    break;
-
-                case ConsoleKey.Escape:
-                    ClearCurrentLine(prompt, input.Length);
-                    input.Clear();
-                    cursorPosition = 0;
-                    Console.Write(prompt);
-                    break;
-
-                case ConsoleKey.Tab:
-                    break;
-
-                default:
-                    if (!char.IsControl(keyInfo.KeyChar))
-                    {
-                        input.Insert(cursorPosition, keyInfo.KeyChar);
-                        cursorPosition++;
-                        
-                        if (cursorPosition == input.Length)
-                        {
-                            Console.Write(keyInfo.KeyChar);
-                        }
-                        else
-                        {
-                            RedrawLine(prompt, input.ToString(), cursorPosition);
-                        }
-                    }
-                    break;
+                return result;
             }
         }
     }
 
-    private static void ClearCurrentLine(string prompt, int inputLength)
+    private sealed class InputReaderContext
     {
-        Console.SetCursorPosition(0, Console.CursorTop);
-        Console.Write(new string(' ', prompt.Length + inputLength + 1));
-        Console.SetCursorPosition(0, Console.CursorTop);
-    }
+        private readonly CommandHistory _history;
+        private readonly string _prompt;
+        private readonly StringBuilder _input = new();
+        private int _cursorPosition;
 
-    private static void RedrawLine(string prompt, string input, int cursorPosition)
-    {
-        Console.SetCursorPosition(0, Console.CursorTop);
-        Console.Write(prompt + input + " ");
-        Console.SetCursorPosition(prompt.Length + cursorPosition, Console.CursorTop);
+        public InputReaderContext(CommandHistory history, string prompt)
+        {
+            _history = history;
+            _prompt = prompt;
+        }
+
+        public string? ProcessKey(ConsoleKeyInfo keyInfo)
+        {
+            switch (keyInfo.Key)
+            {
+                case ConsoleKey.Enter:
+                    return HandleEnter();
+                case ConsoleKey.UpArrow:
+                    HandleUpArrow();
+                    break;
+                case ConsoleKey.DownArrow:
+                    HandleDownArrow();
+                    break;
+                case ConsoleKey.LeftArrow:
+                    HandleLeftArrow();
+                    break;
+                case ConsoleKey.RightArrow:
+                    HandleRightArrow();
+                    break;
+                case ConsoleKey.Home:
+                    HandleHome();
+                    break;
+                case ConsoleKey.End:
+                    HandleEnd();
+                    break;
+                case ConsoleKey.Backspace:
+                    HandleBackspace();
+                    break;
+                case ConsoleKey.Delete:
+                    HandleDelete();
+                    break;
+                case ConsoleKey.Escape:
+                    HandleEscape();
+                    break;
+                case ConsoleKey.Tab:
+                    break; 
+                default:
+                    HandleCharacter(keyInfo.KeyChar);
+                    break;
+            }
+
+            return null;
+        }
+
+        private string HandleEnter()
+        {
+            Console.WriteLine();
+            var result = _input.ToString();
+            if (!string.IsNullOrWhiteSpace(result))
+            {
+                _history.Add(result);
+            }
+            _history.ResetNavigation();
+            return result;
+        }
+
+        private void HandleUpArrow()
+        {
+            var previous = _history.GetPrevious();
+            if (previous != null)
+            {
+                ReplaceInput(previous);
+            }
+        }
+
+        private void HandleDownArrow()
+        {
+            var next = _history.GetNext();
+            if (next != null)
+            {
+                ReplaceInput(next);
+            }
+        }
+
+        private void HandleLeftArrow()
+        {
+            if (_cursorPosition > 0)
+            {
+                _cursorPosition--;
+                Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
+            }
+        }
+
+        private void HandleRightArrow()
+        {
+            if (_cursorPosition < _input.Length)
+            {
+                _cursorPosition++;
+                Console.SetCursorPosition(Console.CursorLeft + 1, Console.CursorTop);
+            }
+        }
+
+        private void HandleHome()
+        {
+            Console.SetCursorPosition(_prompt.Length, Console.CursorTop);
+            _cursorPosition = 0;
+        }
+
+        private void HandleEnd()
+        {
+            Console.SetCursorPosition(_prompt.Length + _input.Length, Console.CursorTop);
+            _cursorPosition = _input.Length;
+        }
+
+        private void HandleBackspace()
+        {
+            if (_cursorPosition > 0)
+            {
+                _input.Remove(_cursorPosition - 1, 1);
+                _cursorPosition--;
+                RedrawLine();
+            }
+        }
+
+        private void HandleDelete()
+        {
+            if (_cursorPosition < _input.Length)
+            {
+                _input.Remove(_cursorPosition, 1);
+                RedrawLine();
+            }
+        }
+
+        private void HandleEscape()
+        {
+            ClearCurrentLine();
+            _input.Clear();
+            _cursorPosition = 0;
+            Console.Write(_prompt);
+        }
+
+        private void HandleCharacter(char c)
+        {
+            if (char.IsControl(c)) return;
+
+            _input.Insert(_cursorPosition, c);
+            _cursorPosition++;
+
+            if (_cursorPosition == _input.Length)
+            {
+                Console.Write(c);
+            }
+            else
+            {
+                RedrawLine();
+            }
+        }
+
+        private void ReplaceInput(string newText)
+        {
+            ClearCurrentLine();
+            _input.Clear();
+            _input.Append(newText);
+            _cursorPosition = _input.Length;
+            Console.Write(_prompt + _input);
+        }
+
+        private void ClearCurrentLine()
+        {
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.Write(new string(' ', _prompt.Length + _input.Length + 1));
+            Console.SetCursorPosition(0, Console.CursorTop);
+        }
+
+        private void RedrawLine()
+        {
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.Write(_prompt + _input + " ");
+            Console.SetCursorPosition(_prompt.Length + _cursorPosition, Console.CursorTop);
+        }
     }
 }

@@ -10,7 +10,7 @@ public interface IInteractiveModeRunner
     int Run(); 
 }
 
-public class InteractiveModeRunner(CommandApp app, IAppLogger logger) : IInteractiveModeRunner
+public class InteractiveModeRunner(CommandApp app) : IInteractiveModeRunner
 {
 
     public int Run()

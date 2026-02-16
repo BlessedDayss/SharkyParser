@@ -28,7 +28,7 @@ public static class Program
         }
     }
     
-    private static IServiceCollection ConfigureServices()
+    private static ServiceCollection ConfigureServices()
     {
         var services = new ServiceCollection();
         
