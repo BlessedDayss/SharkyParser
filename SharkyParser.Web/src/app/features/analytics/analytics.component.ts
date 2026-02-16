@@ -1,8 +1,7 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { LogDataService } from '../../core/services/log-data.service';
-import { LogEntry } from '../../core/models/log-entry';
 
 @Component({
   selector: 'app-analytics',
@@ -12,8 +11,8 @@ import { LogEntry } from '../../core/models/log-entry';
   styleUrl: './analytics.component.scss'
 })
 export class AnalyticsComponent {
-  private logData = inject(LogDataService);
-  private router = inject(Router);
+  private readonly logData = inject(LogDataService);
+  private readonly router = inject(Router);
 
   entries = this.logData.entries;
   statistics = this.logData.statistics;

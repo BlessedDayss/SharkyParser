@@ -12,8 +12,8 @@ import { ChangelogService } from '../../core/services/changelog.service';
   styleUrl: './changelog.component.scss'
 })
 export class ChangelogComponent implements OnInit {
-  private changelogService = inject(ChangelogService);
-  private sanitizer = inject(DomSanitizer);
+  private readonly changelogService = inject(ChangelogService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   htmlContent = signal<SafeHtml>('');
   loading = signal<boolean>(true);

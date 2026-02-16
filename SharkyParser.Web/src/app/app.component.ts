@@ -12,9 +12,9 @@ import { FileSelectionService } from './core/services/file-selection.service';
 export class AppComponent implements OnInit {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
-  private http = inject(HttpClient);
-  private router = inject(Router);
-  private fileSelection = inject(FileSelectionService);
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly fileSelection = inject(FileSelectionService);
 
   backendStatus = signal<string>('Checking...');
   backendStatusClass = signal<string>('');
