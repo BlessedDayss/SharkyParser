@@ -53,10 +53,17 @@ public class IISLogParser(IAppLogger logger) : BaseLogParser(logger)
             entry = entry with { Timestamp = d };
         }
         
+
         // Compute Level from Status Code
         if (entry.Fields.TryGetValue("sc-status", out var statusCode)) {
             entry = entry with { Level = GetLevelFromStatusCode(statusCode) };
         }
+
+        // Set Message from cs-uri-stem
+        if (entry.Fields.TryGetValue("cs-uri-stem", out var uriStem)) {
+            entry = entry with { Message = uriStem };
+        }
+
 
         return entry;
     }

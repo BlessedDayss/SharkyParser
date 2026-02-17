@@ -11,3 +11,6 @@ publish/
 *.suo
 .DS_Store
 Logs/
+out/
+dotnet/
+dotnet-win/

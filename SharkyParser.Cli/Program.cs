@@ -17,7 +17,7 @@ public static class Program
         {
             var services = ConfigureServices();
             using var serviceProvider = services.BuildServiceProvider();
-            
+
             var runner = serviceProvider.GetRequiredService<ApplicationRunner>();
             return runner.Run(args);
         }
@@ -27,11 +27,11 @@ public static class Program
             return 1;
         }
     }
-    
+
     private static ServiceCollection ConfigureServices()
     {
         var services = new ServiceCollection();
-        
+
         services.AddTransient<InstallationLogParser>();
         services.AddSingleton<ILogParserRegistry, LogParserRegistry>();
         services.AddSingleton<ILogParserFactory, LogParserFactory>();
@@ -39,25 +39,25 @@ public static class Program
 
         services.AddTransient<IISLogParser>();
         services.AddSingleton<ILogAnalyzer, LogAnalyzer>();
-        
-        services.AddSingleton<IAppLogger, AppFileLogger>(); 
+
+        services.AddSingleton<IAppLogger, AppFileLogger>();
         services.AddSingleton<IApplicationModeDetector, ApplicationModeDetector>();
-        
+
         services.AddSingleton<ICliModeRunner, CliModeRunner>();
 
         services.AddSingleton<IInteractiveModeRunner, InteractiveModeRunner>();
         services.AddSingleton<IEmbeddedModeRunner, EmbeddedModeRunner>();
-        
+
         services.AddSingleton<ApplicationRunner>();
-        
-        services.AddSingleton<CommandApp>(_ => 
+
+        services.AddSingleton<CommandApp>(_ =>
         {
             var registrar = new TypeRegistrar(services);
             var app = new CommandApp(registrar);
             app.Configure(Startup.ConfigureCommands);
             return app;
         });
-        
+
         return services;
     }
 }

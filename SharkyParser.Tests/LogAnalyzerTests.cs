@@ -14,12 +14,14 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() {
+            new()
+            {
                 Level = "INFO",
                 Message = "Starting",
                 Timestamp = default
             },
-            new() {
+            new()
+            {
                 Level = "ERROR",
                 Message = "Failed",
                 Timestamp = default
@@ -34,7 +36,8 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() {
+            new()
+            {
                 Level = "FATAL",
                 Message = "Crash",
                 Timestamp = default
@@ -49,7 +52,8 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() {
+            new()
+            {
                 Level = "INFO",
                 Message = "All good",
                 Timestamp = default
@@ -64,7 +68,8 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() {
+            new()
+            {
                 Level = "WARN",
                 Message = "Be careful",
                 Timestamp = default
@@ -79,22 +84,26 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() {
+            new()
+            {
                 Level = "INFO",
                 Message = "Info 1",
                 Timestamp = default
             },
-            new() {
+            new()
+            {
                 Level = "INFO",
                 Message = "Info 2",
                 Timestamp = default
             },
-            new() {
+            new()
+            {
                 Level = "WARN",
                 Message = "Warning",
                 Timestamp = default
             },
-            new() {
+            new()
+            {
                 Level = "ERROR",
                 Message = "Error",
                 Timestamp = default
@@ -115,12 +124,14 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() {
+            new()
+            {
                 Level = "INFO",
                 Message = "Good",
                 Timestamp = default
             },
-            new() {
+            new()
+            {
                 Level = "WARN",
                 Message = "Warning",
                 Timestamp = default
