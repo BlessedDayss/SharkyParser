@@ -156,7 +156,9 @@ public class ProgramTests
     [Fact]
     public void Main_Integration_ParseCommand_WithNonExistentFile_ReturnsError()
     {
-        var exitCode = Program.Main(["parse", "non-existent-file.log", "--type", "installation"]);
+
+        var exitCode = Program.Main(["parse", "non-existent-file.log", "--type", "update"]);
+
 
         exitCode.Should().NotBe(0);
     }

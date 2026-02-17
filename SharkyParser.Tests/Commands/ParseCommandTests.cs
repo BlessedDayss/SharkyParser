@@ -24,7 +24,7 @@ public class ParseCommandTests
             {
                 Timestamp = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
                 Level = "ERROR",
-                Message = "bad|msg\nline2",
+                Message = "bad|msg\nline2\nstack|trace",
                 Source = "Updater",
                 LineNumber = 1,
                 FilePath = "file.log",
@@ -253,10 +253,10 @@ public class ParseCommandTests
         public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
             => Task.FromResult<IEnumerable<LogEntry>>(_entries);
 
-        public IReadOnlyList<LogColumn> GetColumns() {
-            throw new NotImplementedException();
-        }
+
+        public IReadOnlyList<LogColumn> GetColumns() => new List<LogColumn>();
     }
+
 
     private sealed class ThrowingLogParserFactory : ILogParserFactory
     {

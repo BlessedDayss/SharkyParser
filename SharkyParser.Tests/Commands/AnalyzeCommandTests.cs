@@ -254,10 +254,10 @@ public class AnalyzeCommandTests
         public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
             => Task.FromResult<IEnumerable<LogEntry>>(_entries);
 
-        public IReadOnlyList<LogColumn> GetColumns() {
-            throw new NotImplementedException();
-        }
+
+        public IReadOnlyList<LogColumn> GetColumns() => new List<LogColumn>();
     }
+
 
     private sealed class FakeAnalyzer : ILogAnalyzer
     {
