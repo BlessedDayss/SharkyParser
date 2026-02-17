@@ -4,6 +4,7 @@ import { Subject } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class FileSelectionService {
   pendingFile = signal<File | null>(null);
+  pendingLogTypeName = signal<string | null>(null);
 
   private readonly openPickerSubject = new Subject<void>();
   openPicker$ = this.openPickerSubject.asObservable();
@@ -16,9 +17,20 @@ export class FileSelectionService {
     this.pendingFile.set(file);
   }
 
-  takeFile(): File | null {
-    const file = this.pendingFile();
+  setLogType(typeName: string) {
+    this.pendingLogTypeName.set(typeName);
+  }
+
+  getPendingFile() {
+    return this.pendingFile();
+  }
+
+  getPendingLogType() {
+    return this.pendingLogTypeName();
+  }
+
+  clear() {
     this.pendingFile.set(null);
-    return file;
+    this.pendingLogTypeName.set(null);
   }
 }

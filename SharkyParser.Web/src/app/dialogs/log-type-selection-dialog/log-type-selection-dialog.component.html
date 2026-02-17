@@ -1,0 +1,44 @@
+<div class="dialog-backdrop" (click)="onClose()">
+    <div class="dialog-container glass-panel" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+            <h2>Select Log Type</h2>
+            <button class="close-btn" (click)="onClose()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="dialog-content">
+            @if (loading()) {
+            <div class="loading-state">
+                <div class="scanner-line"></div>
+                <p>Scanning for available parsers...</p>
+            </div>
+            } @else if (error()) {
+            <div class="error-state">
+                <span class="material-symbols-outlined">error</span>
+                <p>{{ error() }}</p>
+                <button class="secondary-btn" (click)="ngOnInit()">Retry</button>
+            </div>
+            } @else {
+            <div class="log-types-grid">
+                @for (type of logTypes(); track type.value) {
+                <button class="log-type-card" (click)="onSelect(type)">
+                    <div class="icon-placeholder">
+                        <span class="material-symbols-outlined">
+                            {{ type.name === 'IIS' ? 'dns' :
+                            type.name === 'RabbitMq' ? 'hub' :
+                            type.name === 'Installation' ? 'install_desktop' :
+                            type.name === 'Update' ? 'update' : 'description' }}
+                        </span>
+                    </div>
+                    <div class="type-info">
+                        <h3>{{ type.name }}</h3>
+                        <p>{{ type.description }}</p>
+                    </div>
+                </button>
+                }
+            </div>
+            }
+        </div>
+    </div>
+</div>

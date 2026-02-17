@@ -12,6 +12,8 @@ namespace SharkyParser.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IGitHubAuthService _authService;
+    private readonly ILogger<AuthController> _logger;
+
     public AuthController(
         IGitHubAuthService authService,
         ILogger<AuthController> logger)

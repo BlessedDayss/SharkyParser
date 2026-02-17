@@ -2,10 +2,12 @@ import { Component, ViewChild, ElementRef, inject, signal, OnInit } from '@angul
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FileSelectionService } from './core/services/file-selection.service';
+import { LogTypeSelectionDialogComponent } from './dialogs/log-type-selection-dialog/log-type-selection-dialog.component';
+import { LogType } from './core/models/log-type';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, LogTypeSelectionDialogComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -16,6 +18,7 @@ export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly fileSelection = inject(FileSelectionService);
 
+  showLogTypeDialog = signal<boolean>(false);
   backendStatus = signal<string>('Checking...');
   backendStatusClass = signal<string>('');
   sidebarHovered = signal<boolean>(false);
@@ -36,8 +39,17 @@ export class AppComponent implements OnInit {
   }
 
   onOpenLog() {
-    this.router.navigate(['/logs']);
+    this.showLogTypeDialog.set(true);
+  }
+
+  onLogTypeSelected(type: LogType) {
+    this.showLogTypeDialog.set(false);
+    this.fileSelection.setLogType(type.name);
     this.fileInput.nativeElement.click();
+  }
+
+  onDialogClose() {
+    this.showLogTypeDialog.set(false);
   }
 
   onFileSelected(event: Event) {
@@ -52,8 +64,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.fileSelection.openPicker$.subscribe(() => {
-      this.router.navigate(['/logs']);
-      this.fileInput.nativeElement.click();
+      this.onOpenLog();
     });
 
     this.http.get<{ status: string }>('/api/logs/health').subscribe({

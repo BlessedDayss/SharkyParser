@@ -4,10 +4,15 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ParseResult } from '../models/parse-result';
 import { LogEntry } from '../models/log-entry';
+import { LogType } from '../models/log-type';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
   private readonly http = inject(HttpClient);
+
+  getLogTypes(): Observable<LogType[]> {
+    return this.http.get<LogType[]>('/api/logs/types');
+  }
 
   parse(file: File, logType: string): Observable<ParseResult> {
     const formData = new FormData();

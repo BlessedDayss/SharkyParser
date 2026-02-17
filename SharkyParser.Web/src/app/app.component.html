@@ -13,49 +13,55 @@
 </div>
 
 <div class="app-container">
-  <div class="sidebar-wrapper" [class.expanded]="sidebarVisible" (mouseenter)="sidebarHovered.set(true)" (mouseleave)="sidebarHovered.set(false)">
+  <div class="sidebar-wrapper" [class.expanded]="sidebarVisible" (mouseenter)="sidebarHovered.set(true)"
+    (mouseleave)="sidebarHovered.set(false)">
     <div class="sidebar-edge" [class.hidden]="sidebarVisible"></div>
     <aside class="sidebar glass-panel" [class.expanded]="sidebarVisible">
-    <button class="pin-btn" [class.pinned]="sidebarPinned()" (click)="toggleSidebarPin()" [title]="sidebarPinned() ? 'Открепить сайдбар' : 'Закрепить сайдбар'">
-      <span class="material-symbols-outlined">{{ sidebarPinned() ? 'push_pin' : 'push_pin' }}</span>
-    </button>
-    <a routerLink="/home" class="logo-section logo-link">
-      <div class="logo-box">
-        <span class="logo-s">S</span>
+      <button class="pin-btn" [class.pinned]="sidebarPinned()" (click)="toggleSidebarPin()"
+        [title]="sidebarPinned() ? 'Открепить сайдбар' : 'Закрепить сайдбар'">
+        <span class="material-symbols-outlined">{{ sidebarPinned() ? 'push_pin' : 'push_pin' }}</span>
+      </button>
+      <a routerLink="/home" class="logo-section logo-link">
+        <div class="logo-box">
+          <span class="logo-s">S</span>
+        </div>
+        <h1>Sharky<span class="logo-accent">Parser</span> <span class="logo-pro">PRO</span></h1>
+      </a>
+      <nav class="sidebar-nav">
+        <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+          <span class="material-symbols-outlined">home</span> Home
+        </a>
+        <a routerLink="/logs" routerLinkActive="active" class="nav-item">
+          <span class="material-symbols-outlined">folder_open</span> Logs
+        </a>
+        <a routerLink="/analytics" routerLinkActive="active" class="nav-item">
+          <span class="material-symbols-outlined">analytics</span> Analytics
+        </a>
+        <a routerLink="/changelog" routerLinkActive="active" class="nav-item">
+          <span class="material-symbols-outlined">history</span> Changelog
+        </a>
+        <a routerLink="/ai-agent" routerLinkActive="active" class="nav-item">
+          <span class="material-symbols-outlined">smart_toy</span> AI Agent
+        </a>
+        <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+          <span class="material-symbols-outlined">settings</span> Settings
+        </a>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <button class="primary-btn" (click)="onOpenLog()">
+        <span>🚀</span> Get Started
+      </button>
+      <div class="connection-status">
+        Backend: <span [class]="backendStatusClass()">{{ backendStatus() }}</span>
       </div>
-      <h1>Sharky<span class="logo-accent">Parser</span> <span class="logo-pro">PRO</span></h1>
-    </a>
-    <nav class="sidebar-nav">
-      <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
-        <span class="material-symbols-outlined">home</span> Home
-      </a>
-      <a routerLink="/logs" routerLinkActive="active" class="nav-item">
-        <span class="material-symbols-outlined">folder_open</span> Logs
-      </a>
-      <a routerLink="/analytics" routerLinkActive="active" class="nav-item">
-        <span class="material-symbols-outlined">analytics</span> Analytics
-      </a>
-      <a routerLink="/changelog" routerLinkActive="active" class="nav-item">
-        <span class="material-symbols-outlined">history</span> Changelog
-      </a>
-      <a routerLink="/ai-agent" routerLinkActive="active" class="nav-item">
-        <span class="material-symbols-outlined">smart_toy</span> AI Agent
-      </a>
-      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-        <span class="material-symbols-outlined">settings</span> Settings
-      </a>
-    </nav>
-    <div class="sidebar-spacer"></div>
-    <button class="primary-btn" (click)="onOpenLog()">
-      <span>🚀</span> Get Started
-    </button>
-    <div class="connection-status">
-      Backend: <span [class]="backendStatusClass()">{{ backendStatus() }}</span>
-    </div>
-  </aside>
+    </aside>
   </div>
   <main class="main-content" [class.sidebar-open]="sidebarVisible">
     <router-outlet />
   </main>
 </div>
 <input #fileInput type="file" accept=".log,.txt,.csv" (change)="onFileSelected($event)" style="display: none" />
+
+@if (showLogTypeDialog()) {
+<app-log-type-selection-dialog (select)="onLogTypeSelected($event)" (close)="onDialogClose()" />
+}

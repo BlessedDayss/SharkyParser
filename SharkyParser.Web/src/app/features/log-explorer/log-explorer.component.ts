@@ -48,10 +48,13 @@ export class LogExplorerComponent implements OnInit {
   // Watch for file changes reactively — handles the case when
   // the component is already mounted and a new file is selected
   private fileWatcher = effect(() => {
-    const file = this.fileSelection.pendingFile();
-    if (file) {
-      this.fileSelection.takeFile(); // consume it
-      this.parseFile(file);
+    const file = this.fileSelection.getPendingFile();
+    const logType = this.fileSelection.getPendingLogType();
+
+    if (file && logType) {
+      this.fileSelection.clear(); // consume it
+      this.selectedLogType.set(logType);
+      this.parseFile(file, logType);
     }
   });
 
@@ -60,14 +63,13 @@ export class LogExplorerComponent implements OnInit {
   }
 
   onFileDropped(file: File) {
-    this.parseFile(file);
+    this.parseFile(file, this.selectedLogType());
   }
 
-  parseFile(file: File) {
+  parseFile(file: File, logType: string) {
     this.fileName.set(file.name);
     this.loading.set(true);
     this.error.set(null);
-    const logType = this.selectedLogType();
     this.logService.parse(file, logType).subscribe({
       next: (result) => {
         this.entries.set(result.entries);
