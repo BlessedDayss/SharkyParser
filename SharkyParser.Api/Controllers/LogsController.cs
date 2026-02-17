@@ -1,36 +1,33 @@
 using Microsoft.AspNetCore.Mvc;
+using SharkyParser.Api.Data;
 using SharkyParser.Api.Interfaces;
 using SharkyParser.Core.Enums;
 
 namespace SharkyParser.Api.Controllers;
 
-/// <summary>
-/// API endpoints for log file parsing and analysis.
-/// All business logic is delegated to ILogParsingService (SRP).
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class LogsController : ControllerBase
 {
     private readonly ILogParsingService _parsingService;
+    private readonly AppDbContext _db;
     private readonly ILogger<LogsController> _logger;
 
-    private const int MaxFileSizeBytes = 50 * 1024 * 1024; // 50 MB
+    private const int MaxFileSizeBytes = 50 * 1024 * 1024;
 
     public LogsController(
         ILogParsingService parsingService,
+        AppDbContext db,
         ILogger<LogsController> logger)
     {
         _parsingService = parsingService;
-        _logger = logger;
+        _db             = db;
+        _logger         = logger;
     }
 
     [HttpGet("types")]
     public IActionResult GetTypes()
-    {
-        var types = _parsingService.GetAvailableLogTypes();
-        return Ok(types);
-    }
+        => Ok(_parsingService.GetAvailableLogTypes());
 
     [HttpPost("parse")]
     [RequestSizeLimit(MaxFileSizeBytes)]
@@ -41,10 +38,10 @@ public class LogsController : ControllerBase
         CancellationToken ct = default)
     {
         if (file == null || file.Length == 0)
-            return BadRequest("No file uploaded");
+            return BadRequest("No file uploaded.");
 
         if (file.Length > MaxFileSizeBytes)
-            return BadRequest($"File size exceeds limit of {MaxFileSizeBytes / (1024 * 1024)} MB");
+            return BadRequest($"File size exceeds {MaxFileSizeBytes / (1024 * 1024)} MB.");
 
         if (!Enum.TryParse<LogType>(logType, ignoreCase: true, out var type))
             return BadRequest($"Invalid log type. Available: {string.Join(", ", Enum.GetNames<LogType>())}");
@@ -55,7 +52,6 @@ public class LogsController : ControllerBase
             var result = await _parsingService.ParseFileAsync(stream, file.FileName, type, ct);
             return Ok(result);
         }
-
         catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
@@ -63,18 +59,21 @@ public class LogsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to parse log file");
-            return StatusCode(500, "Failed to parse log file");
+            return StatusCode(500, "Failed to parse log file.");
         }
     }
 
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory(CancellationToken ct)
-    {
-        var history = await _parsingService.GetRecentFilesAsync(20, ct);
-        return Ok(history);
-    }
+        => Ok(await _parsingService.GetRecentFilesAsync(20, ct));
 
     [HttpGet("health")]
-    public IActionResult Health() => Ok(new { status = "Active", database = "Connected" });
+    public async Task<IActionResult> Health(CancellationToken ct)
+    {
+        var dbReachable = await _db.Database.CanConnectAsync(ct);
+        var status = dbReachable ? "connected" : "unreachable";
+        return dbReachable
+            ? Ok(new { status = "active", database = status })
+            : StatusCode(503, new { status = "degraded", database = status });
+    }
 }
-

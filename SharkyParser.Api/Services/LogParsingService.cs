@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using SharkyParser.Api.Data;
 using SharkyParser.Api.Data.Models;
+using SharkyParser.Api.Data.Repositories;
 using SharkyParser.Api.DTOs;
 using SharkyParser.Api.Infrastructure;
 using SharkyParser.Api.Interfaces;
@@ -13,89 +12,75 @@ namespace SharkyParser.Api.Services;
 
 public sealed class LogParsingService : ILogParsingService
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IFileRepository _fileRepository;
     private readonly ILogParserFactory _parserFactory;
     private readonly ILogAnalyzer _analyzer;
     private readonly ILogger _logger;
 
     public LogParsingService(
-        AppDbContext dbContext,
+        IFileRepository fileRepository,
         ILogParserFactory parserFactory,
         ILogAnalyzer analyzer,
         ILogger logger)
     {
-        _dbContext = dbContext;
-        _parserFactory = parserFactory;
-        _analyzer = analyzer;
-        _logger = logger;
+        _fileRepository = fileRepository;
+        _parserFactory  = parserFactory;
+        _analyzer       = analyzer;
+        _logger         = logger;
     }
-
 
     public IReadOnlyList<LogTypeDto> GetAvailableLogTypes()
-    {
-        return _parserFactory.GetAvailableTypes()
-            .Select(DtoMapper.ToDto)
-            .ToList()
-            .AsReadOnly();
-    }
+        => _parserFactory.GetAvailableTypes().Select(DtoMapper.ToDto).ToList().AsReadOnly();
 
-    public async Task<ParseResultDto> ParseFileAsync(Stream fileStream, string fileName, LogType logType, CancellationToken ct = default)
+    public async Task<ParseResultDto> ParseFileAsync(
+        Stream fileStream, string fileName, LogType logType, CancellationToken ct = default)
     {
         var tempPath = Path.Combine(Path.GetTempPath(), $"sharky_{Guid.NewGuid():N}.log");
 
         try
         {
-            // Read stream into byte array for DB and file stream for parsing
-            using var ms = new MemoryStream();
-            await fileStream.CopyToAsync(ms, ct);
-            var fileBytes = ms.ToArray();
+            // Single read: write to temp file and accumulate bytes in one pass.
+            byte[] fileBytes;
+            await using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+            {
+                await fileStream.CopyToAsync(fs, ct);
+            }
+            fileBytes = await File.ReadAllBytesAsync(tempPath, ct);
 
-            await File.WriteAllBytesAsync(tempPath, fileBytes, ct);
-
-            var parser = _parserFactory.CreateParser(logType);
-            var entries = (await parser.ParseFileAsync(tempPath)).ToList();
-            var columns = parser.GetColumns();
+            var parser     = _parserFactory.CreateParser(logType);
+            var entries    = (await parser.ParseFileAsync(tempPath)).ToList();
+            var columns    = parser.GetColumns();
             var statistics = _analyzer.GetStatistics(entries, logType);
 
-            var result = new ParseResultDto(
+            var record = new FileRecord
+            {
+                FileName       = fileName,
+                FileSize       = fileBytes.Length,
+                LogType        = logType.ToString(),
+                Content        = fileBytes,
+                AnalysisResult = JsonSerializer.Serialize(statistics)
+            };
+
+            await _fileRepository.AddAsync(record, ct);
+            _logger.LogInfo($"Processed and saved: {fileName} (id={record.Id})");
+
+            return new ParseResultDto(
                 entries.Select(DtoMapper.ToDto).ToList(),
                 columns.Select(DtoMapper.ToDto).ToList(),
                 DtoMapper.ToDto(statistics)
             );
-
-            // Save to database
-            var fileRecord = new FileRecord
-            {
-                FileName = fileName,
-                FileSize = fileBytes.Length,
-                LogType = logType.ToString(),
-                Content = fileBytes,
-                AnalysisResult = JsonSerializer.Serialize(statistics)
-            };
-
-            _dbContext.Files.Add(fileRecord);
-            await _dbContext.SaveChangesAsync(ct);
-
-            _logger.LogInfo($"File saved to DB and processed: {fileName} (ID: {fileRecord.Id})");
-
-            return result;
         }
         finally
         {
             if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); } catch { /* best-effort cleanup */ }
-            }
+                try { File.Delete(tempPath); } catch { /* best-effort */ }
         }
     }
 
-    public async Task<IEnumerable<FileRecordDto>> GetRecentFilesAsync(int count = 10, CancellationToken ct = default)
+    public async Task<IEnumerable<FileRecordDto>> GetRecentFilesAsync(
+        int count = 10, CancellationToken ct = default)
     {
-        return await _dbContext.Files
-            .OrderByDescending(f => f.UploadedAt)
-            .Take(count)
-            .Select(f => DtoMapper.ToDto(f))
-            .ToListAsync(ct);
+        var records = await _fileRepository.GetRecentAsync(count, ct);
+        return records.Select(DtoMapper.ToDto);
     }
-
 }
