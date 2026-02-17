@@ -3,6 +3,7 @@ using System.Text;
 using SharkyParser.Core;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Enums;
+using SharkyParser.Core.Models;
 using SharkyParser.Core.Parsers;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -143,6 +144,17 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         // Statistics line: STATS|total|errors|warnings|info|debug
         Console.WriteLine($"STATS|{totalEntries}|{errors}|{warnings}|{info}|{debug}");
 
+        // Get dynamic columns from parser
+        var dynamicColumns = parser.GetColumns().Where(c => !c.IsPredefined).ToList();
+        
+        // Output column headers if there are dynamic columns
+        if (dynamicColumns.Any())
+        {
+            var headerLine = new StringBuilder("COLUMNS|");
+            headerLine.Append(string.Join("|", dynamicColumns.Select(c => EscapePipe(c.Name))));
+            Console.WriteLine(headerLine.ToString());
+        }
+
         foreach (var log in logs)
         {
             var line = new StringBuilder();
@@ -155,13 +167,22 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
             line.Append('|');
             line.Append(EscapePipe(log.Source));
             line.Append('|');
-            line.Append(EscapePipe(log.StackTrace));
-            line.Append('|');
             line.Append(log.LineNumber);
             line.Append('|');
             line.Append(EscapePipe(log.FilePath));
             line.Append('|');
             line.Append(EscapePipe(log.RawData));
+            
+            // Append dynamic field values
+            foreach (var column in dynamicColumns)
+            {
+                line.Append('|');
+                if (log.Fields.TryGetValue(column.Name, out var value))
+                {
+                    line.Append(EscapePipe(value));
+                }
+            }
+            
             Console.WriteLine(line.ToString());
         }
     }
@@ -177,11 +198,20 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         AnsiConsole.MarkupLine($"[blue]Filtered entries:[/] {logs.Count}");
         AnsiConsole.WriteLine();
 
+        // Get dynamic columns from parser
+        var dynamicColumns = parser.GetColumns().Where(c => !c.IsPredefined).ToList();
+
         var table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("[blue]Timestamp[/]")
             .AddColumn("[blue]Level[/]")
             .AddColumn("[blue]Message[/]");
+
+        // Add dynamic columns to table
+        foreach (var column in dynamicColumns)
+        {
+            table.AddColumn($"[blue]{Markup.Escape(column.Header)}[/]");
+        }
 
         foreach (var log in logs)
         {
@@ -193,11 +223,27 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
                 _ => "grey"
             };
 
-            table.AddRow(
+            var rowData = new List<string>
+            {
                 log.Timestamp.ToString("HH:mm:ss"),
                 $"[{levelColor}]{log.Level}[/]",
                 Markup.Escape(log.Message)
-            );
+            };
+            
+            // Add dynamic field values to row
+            foreach (var column in dynamicColumns)
+            {
+                if (log.Fields.TryGetValue(column.Name, out var value))
+                {
+                    rowData.Add(Markup.Escape(value));
+                }
+                else
+                {
+                    rowData.Add("");
+                }
+            }
+
+            table.AddRow(rowData.ToArray());
         }
 
         AnsiConsole.Write(table);
