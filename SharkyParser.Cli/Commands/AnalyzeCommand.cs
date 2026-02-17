@@ -65,7 +65,7 @@ public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer
         {
             var parser = parserFactory.CreateParser(logType);
             var logs = parser.ParseFile(settings.Path).ToList();
-            var stats = analyzer.GetStatistics(logs);
+            var stats = analyzer.GetStatistics(logs, logType);
 
             if (settings.Embedded)
             {

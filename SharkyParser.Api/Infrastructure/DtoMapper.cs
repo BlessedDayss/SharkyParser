@@ -45,7 +45,24 @@ public static class DtoMapper
             statistics.InfoCount,
             statistics.DebugCount,
             statistics.IsHealthy,
-            statistics.ExtendedData
+            statistics.ExtendedData,
+            statistics.IisStatistics != null ? ToDto(statistics.IisStatistics) : null
+        );
+    }
+
+    private static IisLogStatisticsDto ToDto(IisLogStatistics stats)
+    {
+        return new IisLogStatisticsDto(
+            stats.RequestsPerMinute,
+            stats.TopIps,
+            stats.SlowestRequests.Select(x => new SlowRequestStatsDto(
+                x.Url, 
+                x.Method, 
+                x.DurationMs, 
+                x.Timestamp, 
+                x.StatusCode
+            )).ToList(),
+            stats.ResponseTimeDistribution
         );
     }
 

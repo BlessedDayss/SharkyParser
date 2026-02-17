@@ -7,5 +7,6 @@ public record LogStatisticsDto(
     int Info,
     int Debug,
     bool IsHealthy,
-    string ExtendedData = ""
+    string ExtendedData = "",
+    IisLogStatisticsDto? IisStatistics = null
 );

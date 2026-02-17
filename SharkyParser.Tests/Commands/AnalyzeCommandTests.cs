@@ -270,6 +270,6 @@ public class AnalyzeCommandTests
 
         public bool HasErrors(IEnumerable<LogEntry> entries) => _stats.ErrorCount > 0;
         public bool HasWarnings(IEnumerable<LogEntry> entries) => _stats.WarningCount > 0;
-        public LogStatistics GetStatistics(IEnumerable<LogEntry> entries) => _stats;
+        public LogStatistics GetStatistics(IEnumerable<LogEntry> entries, LogType type) => _stats;
     }
 }

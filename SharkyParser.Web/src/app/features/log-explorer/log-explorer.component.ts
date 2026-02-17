@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { LogService } from '../../core/services/log.service';
 import { FileSelectionService } from '../../core/services/file-selection.service';
 import { LogDataService } from '../../core/services/log-data.service';
@@ -20,10 +20,11 @@ export class LogExplorerComponent implements OnInit {
   private readonly fileSelection = inject(FileSelectionService);
   private readonly logData = inject(LogDataService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  entries = signal<LogEntry[]>([]);
+  entries = signal<LogEntry[]>(this.logData.entries() || []);
   columns = signal<LogColumn[]>([]);
-  statistics = signal<LogStatistics | null>(null);
+  statistics = signal<LogStatistics | null>(this.logData.statistics() || null);
   searchTerm = signal('');
   levelFilter = signal('ALL');
   selectedLogType = signal('Installation');
@@ -35,14 +36,29 @@ export class LogExplorerComponent implements OnInit {
   showAiPrompt = signal(false);
   aiPromptDismissed = signal(false);
 
+  timeFilter = signal<string | null>(null);
+
   filteredEntries = computed(() => {
     const e = this.entries();
     const search = this.searchTerm().toLowerCase();
     const level = this.levelFilter();
+    const time = this.timeFilter();
+
     return e.filter((entry) => {
       const matchesSearch = !search || entry.message.toLowerCase().includes(search);
       const matchesLevel = level === 'ALL' || entry.level.toUpperCase() === level.toUpperCase();
-      return matchesSearch && matchesLevel;
+
+      let matchesTime = true;
+      if (time) {
+        const entryTime = new Date(entry.timestamp).getTime();
+        const targetTime = new Date(time).getTime();
+        // Match within the same minute
+        const entryMinute = Math.floor(entryTime / 60000);
+        const targetMinute = Math.floor(targetTime / 60000);
+        matchesTime = entryMinute === targetMinute;
+      }
+
+      return matchesSearch && matchesLevel && matchesTime;
     });
   });
 
@@ -57,7 +73,15 @@ export class LogExplorerComponent implements OnInit {
     }
   });
 
-  ngOnInit() { }
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['time']) {
+        this.timeFilter.set(params['time']);
+      } else {
+        this.timeFilter.set(null);
+      }
+    });
+  }
 
   onFileDropped(file: File) {
     this.parseFile(file, this.selectedLogType());

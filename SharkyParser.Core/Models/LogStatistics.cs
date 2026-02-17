@@ -7,5 +7,6 @@ public record LogStatistics(
     int InfoCount,
     int DebugCount,
     bool IsHealthy,
-    string ExtendedData = ""
+    string ExtendedData = "",
+    SharkyParser.Core.Models.IisLogStatistics? IisStatistics = null
 );

@@ -5,54 +5,56 @@
   </header>
 
   @if (entries().length === 0) {
-    <div class="empty-state glass-panel glow-border">
-      <div class="empty-icon">📊</div>
-      <h3>No data to analyze</h3>
-      <p>Select a log file first to build the charts</p>
-      <button class="primary-btn" (click)="goSelectFile()">
-        <span>🚀</span> Choose Log File
-      </button>
-    </div>
+  <div class="empty-state glass-panel glow-border">
+    <div class="empty-icon">📊</div>
+    <h3>No data to analyze</h3>
+    <p>Select a log file first to build the charts</p>
+    <button class="primary-btn" (click)="goSelectFile()">
+      <span>🚀</span> Choose Log File
+    </button>
+  </div>
   } @else {
-    <div class="dashboard-content">
-      <div class="dash-card chart-card">
-        <h3>Log Volume Over Time</h3>
-        <div class="chart-container">
-          <div class="chart-bars">
-            @for (v of chartData().volume; track $index) {
-              <div
-                class="bar total"
-                [style.height.%]="(v / chartData().max) * 100"
-              ></div>
-            }
-          </div>
-        </div>
-      </div>
-      <div class="dashboard-row">
-        <div class="dash-card">
-          <h3>Health Overview</h3>
-          <div class="health-status">
-            <div class="status-pulse" [class.healthy]="statistics()?.isHealthy" [class.unhealthy]="!statistics()?.isHealthy">
-              {{ statistics()?.isHealthy ? '✓' : '!' }}
-            </div>
-            <div>
-              <div class="health-text">{{ statistics()?.isHealthy ? 'System Healthy' : 'Issues Detected' }}</div>
-              <div class="health-sub">Deep verification complete</div>
-            </div>
-          </div>
-        </div>
-        <div class="dash-card">
-          <h3>Top Log Sources</h3>
-          <div class="sources-list">
-            @for (s of topSources(); track s.name) {
-              <div class="source-item">
-                <span class="source-name">{{ s.name }}</span>
-                <span class="source-count">{{ s.count }}</span>
-              </div>
-            }
-          </div>
+  <div class="dashboard-content">
+    @if (statistics()?.iisStatistics; as iisStats) {
+    <app-iis-dashboard [stats]="iisStats"></app-iis-dashboard>
+    } @else {
+    <div class="dash-card chart-card">
+      <h3>Log Volume Over Time</h3>
+      <div class="chart-container">
+        <div class="chart-bars">
+          @for (v of chartData().volume; track $index) {
+          <div class="bar total" [style.height.%]="(v / chartData().max) * 100"></div>
+          }
         </div>
       </div>
     </div>
+    <div class="dashboard-row">
+      <div class="dash-card">
+        <h3>Health Overview</h3>
+        <div class="health-status">
+          <div class="status-pulse" [class.healthy]="statistics()?.isHealthy"
+            [class.unhealthy]="!statistics()?.isHealthy">
+            {{ statistics()?.isHealthy ? '✓' : '!' }}
+          </div>
+          <div>
+            <div class="health-text">{{ statistics()?.isHealthy ? 'System Healthy' : 'Issues Detected' }}</div>
+            <div class="health-sub">Deep verification complete</div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3>Top Log Sources</h3>
+        <div class="sources-list">
+          @for (s of topSources(); track s.name) {
+          <div class="source-item">
+            <span class="source-name">{{ s.name }}</span>
+            <span class="source-count">{{ s.count }}</span>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+  </div>
   }
 </div>

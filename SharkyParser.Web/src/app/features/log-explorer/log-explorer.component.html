@@ -25,6 +25,13 @@
       <span class="stat-label">Info logs</span>
       <span class="stat-value">{{ stats.info }}</span>
     </button>
+
+    @if (timeFilter()) {
+    <div class="stat-card time-filter active" (click)="timeFilter.set(null)" title="Click to clear filter">
+      <span class="stat-label">Time Filter Active</span>
+      <span class="stat-value">{{ timeFilter() | date:'HH:mm' }} <span class="clear-icon">✕</span></span>
+    </div>
+    }
   </div>
   }
 

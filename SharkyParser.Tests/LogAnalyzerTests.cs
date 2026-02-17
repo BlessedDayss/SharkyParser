@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SharkyParser.Core;
+using SharkyParser.Core.Enums;
 using SharkyParser.Core.Models;
 
 namespace SharkyParser.Tests;
@@ -100,7 +101,7 @@ public class LogAnalyzerTests
             }
         };
 
-        var stats = _sut.GetStatistics(entries);
+        var stats = _sut.GetStatistics(entries, LogType.Installation);
 
         stats.TotalCount.Should().Be(4);
         stats.InfoCount.Should().Be(2);
@@ -126,7 +127,7 @@ public class LogAnalyzerTests
             }
         };
 
-        var stats = _sut.GetStatistics(entries);
+        var stats = _sut.GetStatistics(entries, LogType.Installation);
 
         stats.IsHealthy.Should().BeTrue();
     }
@@ -136,7 +137,7 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>();
 
-        var stats = _sut.GetStatistics(entries);
+        var stats = _sut.GetStatistics(entries, LogType.Installation);
 
         stats.TotalCount.Should().Be(0);
         stats.ErrorCount.Should().Be(0);

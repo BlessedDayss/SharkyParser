@@ -2,11 +2,12 @@ import { Component, inject, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { LogDataService } from '../../core/services/log-data.service';
+import { IisDashboardComponent } from './iis-dashboard/iis-dashboard.component';
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IisDashboardComponent],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.scss'
 })

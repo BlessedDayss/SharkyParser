@@ -1,0 +1,115 @@
+<div class="iis-dashboard">
+
+    <!-- Row 1: Requests Per Minute & Requests By IP -->
+    <div class="dashboard-row">
+
+        <!-- Requests Per Minute (Line Chart) -->
+        <div class="dash-card">
+            <div class="card-header">
+                <h3>Requests Per Minute</h3>
+                <div class="card-actions">
+                    <button class="icon-btn">⏱️</button>
+                </div>
+            </div>
+            <div class="chart-container line-chart">
+                <svg viewBox="0 0 1000 220" preserveAspectRatio="none">
+                    <!-- Grid Lines -->
+                    <line x1="0" y1="200" x2="1000" y2="200" stroke="#333" stroke-width="1" />
+                    <line x1="0" y1="110" x2="1000" y2="110" stroke="#333" stroke-width="1" stroke-dasharray="5,5" />
+                    <line x1="0" y1="20" x2="1000" y2="20" stroke="#333" stroke-width="1" stroke-dasharray="5,5" />
+
+                    <!-- The Data Line -->
+                    <polyline [attr.points]="rpmChart().points" fill="none" stroke="#2196F3" stroke-width="2"
+                        vector-effect="non-scaling-stroke" />
+
+                    <!-- Interactive Points -->
+                    @for (p of rpmChart().pointObjects; track p.time) {
+                    <circle [attr.cx]="p.x" [attr.cy]="p.y" r="6" class="chart-point" (click)="onPointClick(p.time)"
+                        [title]="(p.time | date:'HH:mm') + ': ' + p.count + ' requests'"></circle>
+                    }
+                </svg>
+
+                <!-- X Axis Labels -->
+                <div class="x-axis">
+                    @for (d of rpmChart().dates; track $index) {
+                    <span>{{ d | date:'HH:mm' }}</span>
+                    }
+                </div>
+
+                <div class="y-axis-label max">{{ rpmChart().maxCount }}</div>
+            </div>
+        </div>
+
+        <!-- Requests by IP (Bar Chart) -->
+        <div class="dash-card">
+            <div class="card-header">
+                <h3>Requests by IP Address</h3>
+            </div>
+            <div class="chart-container bar-chart-horiz">
+                @for (ip of topIpsChart(); track ip.ip) {
+                <div class="bar-row">
+                    <span class="label">{{ ip.ip }}</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" [style.width.%]="ip.percent" [attr.title]="ip.count"></div>
+                    </div>
+                    <span class="count">{{ ip.count }}</span>
+                </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Row 2: Slow Response Time & Response Times -->
+    <div class="dashboard-row">
+
+        <!-- Slow Requests (Table) -->
+        <div class="dash-card">
+            <div class="card-header">
+                <h3>Slow Response Time</h3>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Url</th>
+                            <th>Dur (ms)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (req of slowestRequests(); track req) {
+                        <tr>
+                            <td class="col-time">{{ req.timestamp | date:'HH:mm:ss' }}</td>
+                            <td class="col-url" [title]="req.url">{{ req.url }}</td>
+                            <td class="col-dur">{{ req.durationMs }}</td>
+                            <td class="col-status">
+                                <span class="status-badge" [class.error]="req.statusCode >= 500"
+                                    [class.warn]="req.statusCode >= 400">{{ req.statusCode }}</span>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Response Times Distribution (Vertical Bar Chart) -->
+        <div class="dash-card">
+            <div class="card-header">
+                <h3>Response Times</h3>
+            </div>
+            <div class="chart-container bar-chart-vert">
+                @for (bucket of distributionChart(); track bucket.label) {
+                <div class="bar-col">
+                    <div class="bar-fill" [style.height.%]="bucket.heightPercent"></div>
+                    <span class="label">{{ bucket.label }}</span>
+                    <span class="count">{{ bucket.count }}</span>
+                </div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

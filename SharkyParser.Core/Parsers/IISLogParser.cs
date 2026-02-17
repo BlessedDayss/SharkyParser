@@ -41,6 +41,8 @@ public class IISLogParser(IAppLogger logger) : BaseLogParser(logger)
                 entry.Fields[header] = value;
             }
         }
+        
+        entry.Source = entry.Fields.GetValueOrDefault("s-sitename") ?? "IIS Web Server";
 
         if (datePart != null && timePart != null) {
             if (DateTime.TryParseExact($"{datePart} {timePart}", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture,

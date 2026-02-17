@@ -48,7 +48,7 @@ public sealed class LogParsingService : ILogParsingService
             var parser = _parserFactory.GetParserForType(logType);
             var entries = (await parser.ParseFileAsync(tempPath)).ToList();
             var columns = parser.GetColumns();
-            var statistics = _analyzer.GetStatistics(entries);
+            var statistics = _analyzer.GetStatistics(entries, logType);
 
             _logger.LogFileProcessed(tempPath);
 
