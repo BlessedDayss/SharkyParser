@@ -20,8 +20,12 @@ public interface ILogParsingService
     Task<ParseResultDto> ParseFileAsync(Stream fileStream, string fileName, LogType logType, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns recently processed files from the database.
+    /// Returns recently processed files from the database (metadata only, no content).
     /// </summary>
     Task<IEnumerable<FileRecordDto>> GetRecentFilesAsync(int count = 10, CancellationToken ct = default);
 
+    /// <summary>
+    /// Re-parses a previously uploaded file stored in the database and returns its log entries.
+    /// </summary>
+    Task<ParseResultDto> GetEntriesAsync(Guid id, CancellationToken ct = default);
 }

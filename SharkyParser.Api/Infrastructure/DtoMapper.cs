@@ -20,7 +20,7 @@ public static class DtoMapper
     {
         return new LogEntryDto
         {
-            Timestamp = entry.Timestamp.ToString("O"),
+            Timestamp = entry.Timestamp.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
             Level = entry.Level,
             Message = entry.Message,
             LineNumber = entry.LineNumber,
@@ -56,8 +56,13 @@ public static class DtoMapper
 
     private static IisLogStatisticsDto ToDto(IisLogStatistics stats)
     {
+        var rpmStrings = stats.RequestsPerMinute
+            .ToDictionary(
+                kvp => DateTime.SpecifyKind(kvp.Key, DateTimeKind.Utc).ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                kvp => kvp.Value);
+
         return new IisLogStatisticsDto(
-            stats.RequestsPerMinute,
+            rpmStrings,
             stats.TopIps,
             stats.SlowestRequests.Select(x => new SlowRequestStatsDto(
                 x.Url, 

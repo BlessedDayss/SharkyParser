@@ -67,6 +67,25 @@ public class LogsController : ControllerBase
     public async Task<IActionResult> GetHistory(CancellationToken ct)
         => Ok(await _parsingService.GetRecentFilesAsync(20, ct));
 
+    [HttpGet("{id:guid}/entries")]
+    public async Task<IActionResult> GetEntries(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _parsingService.GetEntriesAsync(id, ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound($"File record {id} not found.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load entries for record {Id}", id);
+            return StatusCode(500, "Failed to load log entries.");
+        }
+    }
+
     [HttpGet("health")]
     public async Task<IActionResult> Health(CancellationToken ct)
     {

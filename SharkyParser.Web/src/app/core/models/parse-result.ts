@@ -34,6 +34,7 @@ export interface LogStatistics {
 }
 
 export interface ParseResult {
+  fileId: string;
   entries: LogEntry[];
   columns: LogColumn[];
   statistics: LogStatistics;

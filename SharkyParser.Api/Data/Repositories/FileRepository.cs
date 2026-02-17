@@ -18,4 +18,7 @@ public class FileRepository(AppDbContext db) : IFileRepository
             .Take(count)
             .ToListAsync(ct);
     }
+
+    public async Task<FileRecord?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await db.Files.FindAsync([id], ct);
 }

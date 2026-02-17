@@ -63,7 +63,7 @@ public class LogAnalyzer : ILogAnalyzer
 
         // 2. Requests Per Minute
         var requestsPerMinute = iisEntries
-            .GroupBy(x => new DateTime(x.Entry.Timestamp.Year, x.Entry.Timestamp.Month, x.Entry.Timestamp.Day, x.Entry.Timestamp.Hour, x.Entry.Timestamp.Minute, 0))
+            .GroupBy(x => new DateTime(x.Entry.Timestamp.Year, x.Entry.Timestamp.Month, x.Entry.Timestamp.Day, x.Entry.Timestamp.Hour, x.Entry.Timestamp.Minute, 0, DateTimeKind.Utc))
             .OrderBy(g => g.Key)
             .ToDictionary(g => g.Key, g => g.Count());
 

@@ -65,6 +65,7 @@ public sealed class LogParsingService : ILogParsingService
             _logger.LogInfo($"Processed and saved: {fileName} (id={record.Id})");
 
             return new ParseResultDto(
+                record.Id,
                 entries.Select(DtoMapper.ToDto).ToList(),
                 columns.Select(DtoMapper.ToDto).ToList(),
                 DtoMapper.ToDto(statistics)
@@ -82,5 +83,37 @@ public sealed class LogParsingService : ILogParsingService
     {
         var records = await _fileRepository.GetRecentAsync(count, ct);
         return records.Select(DtoMapper.ToDto);
+    }
+
+    public async Task<ParseResultDto> GetEntriesAsync(Guid id, CancellationToken ct = default)
+    {
+        var record = await _fileRepository.GetByIdAsync(id, ct)
+            ?? throw new KeyNotFoundException($"File record {id} not found.");
+
+        if (!Enum.TryParse<LogType>(record.LogType, out var logType))
+            throw new InvalidOperationException($"Unknown log type stored: {record.LogType}");
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"sharky_{Guid.NewGuid():N}.log");
+        try
+        {
+            await File.WriteAllBytesAsync(tempPath, record.Content, ct);
+
+            var parser     = _parserFactory.CreateParser(logType);
+            var entries    = (await parser.ParseFileAsync(tempPath)).ToList();
+            var columns    = parser.GetColumns();
+            var statistics = _analyzer.GetStatistics(entries, logType);
+
+            return new ParseResultDto(
+                id,
+                entries.Select(DtoMapper.ToDto).ToList(),
+                columns.Select(DtoMapper.ToDto).ToList(),
+                DtoMapper.ToDto(statistics)
+            );
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                try { File.Delete(tempPath); } catch { /* best-effort */ }
+        }
     }
 }

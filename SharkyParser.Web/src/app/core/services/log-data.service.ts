@@ -1,19 +1,23 @@
 import { Injectable, signal } from '@angular/core';
 import { LogEntry } from '../models/log-entry';
-import { LogStatistics } from '../models/parse-result';
+import { LogStatistics, LogColumn } from '../models/parse-result';
 
 @Injectable({ providedIn: 'root' })
 export class LogDataService {
   entries = signal<LogEntry[]>([]);
+  columns = signal<LogColumn[]>([]);
   statistics = signal<LogStatistics | null>(null);
   sourceFile = signal<File | null>(null);
   sourceLogType = signal<string>('Installation');
+  fileId = signal<string | null>(null);
 
-  setData(entries: LogEntry[], statistics: LogStatistics, file?: File, logType?: string) {
+  setData(entries: LogEntry[], columns: LogColumn[], statistics: LogStatistics, file?: File, logType?: string, fileId?: string) {
     this.entries.set(entries);
+    this.columns.set(columns);
     this.statistics.set(statistics);
     if (file) this.sourceFile.set(file);
     if (logType) this.sourceLogType.set(logType);
+    if (fileId) this.fileId.set(fileId);
   }
 
   /**

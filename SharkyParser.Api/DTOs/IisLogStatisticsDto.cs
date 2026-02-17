@@ -1,7 +1,7 @@
 namespace SharkyParser.Api.DTOs;
 
 public record IisLogStatisticsDto(
-    Dictionary<DateTime, int> RequestsPerMinute,
+    Dictionary<string, int> RequestsPerMinute,
     Dictionary<string, int> TopIps,
     List<SlowRequestStatsDto> SlowestRequests,
     Dictionary<string, int> ResponseTimeDistribution

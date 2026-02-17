@@ -7,6 +7,8 @@ import { FileSelectionService } from '../../core/services/file-selection.service
 import { LogDataService } from '../../core/services/log-data.service';
 import { LogEntry } from '../../core/models/log-entry';
 import { LogStatistics, LogColumn } from '../../core/models/parse-result';
+import { switchMap, take } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-log-explorer',
@@ -23,7 +25,7 @@ export class LogExplorerComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   entries = signal<LogEntry[]>(this.logData.entries() || []);
-  columns = signal<LogColumn[]>([]);
+  columns = signal<LogColumn[]>(this.logData.columns() || []);
   statistics = signal<LogStatistics | null>(this.logData.statistics() || null);
   searchTerm = signal('');
   levelFilter = signal('ALL');
@@ -52,7 +54,6 @@ export class LogExplorerComponent implements OnInit {
       if (time) {
         const entryTime = new Date(entry.timestamp).getTime();
         const targetTime = new Date(time).getTime();
-        // Match within the same minute
         const entryMinute = Math.floor(entryTime / 60000);
         const targetMinute = Math.floor(targetTime / 60000);
         matchesTime = entryMinute === targetMinute;
@@ -75,10 +76,52 @@ export class LogExplorerComponent implements OnInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['time']) {
-        this.timeFilter.set(params['time']);
-      } else {
-        this.timeFilter.set(null);
+      const time = params['time'] ?? null;
+      this.timeFilter.set(time);
+
+      // When arriving from the dashboard with a time filter but no in-memory entries,
+      // load the most recent file from the database automatically.
+      if (time && this.entries().length === 0) {
+        this.loadLatestFromDb();
+      }
+    });
+  }
+
+  private loadLatestFromDb() {
+    const knownId = this.logData.fileId();
+
+    // If we already know the ID of the file being viewed — use it directly.
+    const source$ = knownId
+      ? this.logService.getEntries(knownId)
+      : this.logService.getHistory().pipe(
+          take(1),
+          switchMap(history => {
+            if (history.length === 0) return of(null);
+            const latest = history[0];
+            this.fileName.set(latest.fileName);
+            this.selectedLogType.set(latest.logType);
+            return this.logService.getEntries(latest.id);
+          })
+        );
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    source$.pipe(take(1)).subscribe({
+      next: result => {
+        if (result) {
+          this.entries.set(result.entries);
+          this.columns.set(result.columns);
+          this.statistics.set(result.statistics);
+          this.logData.setData(result.entries, result.columns, result.statistics, undefined, undefined, result.fileId);
+        } else {
+          this.error.set('No previously uploaded files found. Please upload a log file first.');
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load log entries from database.');
+        this.loading.set(false);
       }
     });
   }
@@ -98,7 +141,7 @@ export class LogExplorerComponent implements OnInit {
         this.entries.set(result.entries);
         this.columns.set(result.columns);
         this.statistics.set(result.statistics);
-        this.logData.setData(result.entries, result.statistics, file, logType);
+        this.logData.setData(result.entries, result.columns, result.statistics, file, logType, result.fileId);
         this.loading.set(false);
         if (!this.aiPromptDismissed()) {
           setTimeout(() => this.showAiPrompt.set(true), 1200);
