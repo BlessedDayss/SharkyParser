@@ -15,7 +15,13 @@ public interface ILogParsingService
     IReadOnlyList<LogTypeDto> GetAvailableLogTypes();
 
     /// <summary>
-    /// Parses an uploaded log file and returns structured results with statistics.
+    /// Parses an uploaded log file, saves it to the database, and returns results.
     /// </summary>
-    Task<ParseResultDto> ParseFileAsync(Stream fileStream, LogType logType, CancellationToken ct = default);
+    Task<ParseResultDto> ParseFileAsync(Stream fileStream, string fileName, LogType logType, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns recently processed files from the database.
+    /// </summary>
+    Task<IEnumerable<FileRecordDto>> GetRecentFilesAsync(int count = 10, CancellationToken ct = default);
+
 }

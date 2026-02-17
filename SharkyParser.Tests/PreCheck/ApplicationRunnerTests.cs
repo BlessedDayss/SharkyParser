@@ -1,6 +1,6 @@
 using SharkyParser.Cli;
+using SharkyParser.Cli.Interfaces;
 using SharkyParser.Cli.PreCheck;
-using SharkyParser.Core.Interfaces;
 using Moq;
 using Xunit;
 
@@ -11,7 +11,6 @@ public class ApplicationRunnerTests
     [Fact]
     public void Run_WithValidMocks_ExecutesWithoutThrowing()
     {
-        // Arrange
         var detector = new ApplicationModeDetector();
         var mockCliRunner = new Mock<ICliModeRunner>();
         var mockInteractiveRunner = new Mock<IInteractiveModeRunner>();
@@ -31,17 +30,14 @@ public class ApplicationRunnerTests
             mockLogger.Object
         );
 
-        // Act
         var result = runner.Run(args);
 
-        // Assert - Just verify it doesn't throw and returns an int
         Assert.InRange(result, 0, 1);
     }
 
     [Fact]
     public void Run_WithNoArgs_ExecutesInteractiveMode()
     {
-        // Arrange
         var detector = new ApplicationModeDetector();
         var mockCliRunner = new Mock<ICliModeRunner>();
         var mockInteractiveRunner = new Mock<IInteractiveModeRunner>();
@@ -59,10 +55,8 @@ public class ApplicationRunnerTests
             mockLogger.Object
         );
 
-        // Act
         var result = runner.Run(args);
 
-        // Assert
         Assert.Equal(0, result);
         mockInteractiveRunner.Verify(r => r.Run(), Times.Once);
     }
@@ -70,7 +64,6 @@ public class ApplicationRunnerTests
     [Fact]
     public void Run_WithEmbeddedFlag_ExecutesEmbeddedMode()
     {
-        // Arrange
         var detector = new ApplicationModeDetector();
         var mockCliRunner = new Mock<ICliModeRunner>();
         var mockInteractiveRunner = new Mock<IInteractiveModeRunner>();
@@ -88,10 +81,8 @@ public class ApplicationRunnerTests
             mockLogger.Object
         );
 
-        // Act
         var result = runner.Run(args);
 
-        // Assert
         Assert.Equal(0, result);
         mockEmbeddedRunner.Verify(r => r.Run(args), Times.Once);
     }

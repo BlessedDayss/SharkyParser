@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using System.Globalization;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
@@ -15,34 +15,31 @@ public partial class UpdateLogParser : BaseLogParser
     [GeneratedRegex(@"(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})?\s*\[(?<component>[^\]]+)\]\s*(?<action>\w+)\s+(?<target>[^:]+):\s*(?<status>\w+)", RegexOptions.Compiled)]
     private static partial Regex UpdatePatternRegex();
 
-    public UpdateLogParser(IAppLogger logger) : base(logger) { }
+    public UpdateLogParser(ILogger logger) : base(logger) { }
 
     protected override LogEntry? ParseLineCore(string line)
     {
         var match = UpdatePatternRegex().Match(line);
-        if (match.Success)
+        if (!match.Success)
+            return null;
+
+        var action = match.Groups["action"].Value;
+        var status = match.Groups["status"].Value;
+
+        return new LogEntry
         {
-            var action = match.Groups["action"].Value;
-            var status = match.Groups["status"].Value;
-            var level = GetUpdateLevel(action, status);
-
-            var entry = new LogEntry
+            Timestamp = ParseTimestamp(match.Groups["timestamp"].Value),
+            Level = GetUpdateLevel(action, status),
+            Message = $"{action} {match.Groups["target"].Value}: {status}",
+            RawData = line,
+            Fields = new Dictionary<string, string>
             {
-                Timestamp = ParseTimestamp(match.Groups["timestamp"].Value),
-                Level = level,
-                Message = $"{action} {match.Groups["target"].Value}: {status}",
-                RawData = line
-            };
-
-            entry.Fields["Component"] = match.Groups["component"].Value;
-            entry.Fields["Action"] = action;
-            entry.Fields["Target"] = match.Groups["target"].Value;
-            entry.Fields["Status"] = status;
-
-            return entry;
-        }
-
-        return null;
+                ["Component"] = match.Groups["component"].Value,
+                ["Action"] = action,
+                ["Target"] = match.Groups["target"].Value,
+                ["Status"] = status
+            }
+        };
     }
 
     public override IReadOnlyList<LogColumn> GetColumns()
@@ -61,10 +58,10 @@ public partial class UpdateLogParser : BaseLogParser
 
     private static string GetUpdateLevel(string action, string status)
     {
-        if (status.Equals("failed", StringComparison.OrdinalIgnoreCase) || 
+        if (status.Equals("failed", StringComparison.OrdinalIgnoreCase) ||
             status.Equals("error", StringComparison.OrdinalIgnoreCase))
             return "ERROR";
-        
+
         if (status.Equals("warning", StringComparison.OrdinalIgnoreCase))
             return "WARN";
 
@@ -78,8 +75,8 @@ public partial class UpdateLogParser : BaseLogParser
 
     private static DateTime ParseTimestamp(string timestamp)
     {
-        return DateTime.TryParse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) 
-            ? dt 
+        return DateTime.TryParse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
+            ? dt
             : DateTime.Now;
     }
 }

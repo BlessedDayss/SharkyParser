@@ -5,6 +5,7 @@ using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Parsers;
 using SharkyParser.Core.Models;
 using Xunit;
+using ILogger = SharkyParser.Core.Interfaces.ILogger;
 
 namespace SharkyParser.Tests.Parsers;
 
@@ -13,7 +14,7 @@ public class InstallationLogParserTests
     [Fact]
     public void ParseFile_AllToStackTrace_AppendsToStackTraceInFields()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new InstallationLogParser(logger.Object);
         var path = Path.Combine(Path.GetTempPath(), $"2024_12_31_install_log_extra_{Guid.NewGuid():N}.log");
         var lines = new[] { "[01:02:03] INFO First line", "second line", "third line" };
@@ -40,11 +41,9 @@ public class InstallationLogParserTests
     [Fact]
     public void ParseFile_NoStackTrace_AppendsToMessage()
     {
-        var logger = new Mock<IAppLogger>();
-        var parser = new InstallationLogParser(logger.Object)
-        {
-            StackTraceMode = StackTraceMode.NoStackTrace
-        };
+        var logger = new Mock<ILogger>();
+        var parser = new InstallationLogParser(logger.Object);
+        parser.Configure(StackTraceMode.NoStackTrace);
         var path = Path.Combine(Path.GetTempPath(), $"2024_12_31_install_log_extra_{Guid.NewGuid():N}.log");
         var lines = new[] { "[01:02:03] INFO First line", "second line", "third line" };
         File.WriteAllLines(path, lines);
@@ -65,7 +64,7 @@ public class InstallationLogParserTests
     [Fact]
     public void ParseLine_WithFullTimestamp_ParsesTimestampAndLevel()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new InstallationLogParser(logger.Object);
 
         var entry = parser.ParseLine("2024-01-02 03:04:05,123 ERROR Something bad");

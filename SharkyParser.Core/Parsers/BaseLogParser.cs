@@ -1,16 +1,16 @@
-﻿using SharkyParser.Core.Enums;
+using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Models;
 
 namespace SharkyParser.Core.Parsers;
 
-public abstract class BaseLogParser(IAppLogger logger) : ILogParser
+public abstract class BaseLogParser(ILogger logger) : ILogParser
 {
     public abstract LogType SupportedLogType { get; }
     public abstract string ParserName { get; }
     public abstract string ParserDescription { get; }
 
-    protected readonly IAppLogger Logger = logger;
+    protected readonly ILogger Logger = logger;
 
     public virtual LogEntry? ParseLine(string line)
     {

@@ -1,51 +1,34 @@
-﻿using SharkyParser.Core.Enums;
+using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
-using SharkyParser.Core.Parsers;
 
 namespace SharkyParser.Core.Infrastructure;
 
+/// <summary>
+/// Maps LogType → parser factory delegate.
+/// Does NOT self-register parsers (that is a configuration responsibility
+/// belonging to the composition root — Program.cs / Startup).
+/// </summary>
 public class LogParserRegistry : ILogParserRegistry
 {
-    private readonly Dictionary<LogType, Type> _registry = new();
-    private readonly IAppLogger _logger;
-    
-    public LogParserRegistry(IAppLogger logger)
-    {
-        _logger = logger;
-        RegisterDefaultParsers();
-    }
-    
-    private void RegisterDefaultParsers()
-    {
-        Register(LogType.Installation, typeof(InstallationLogParser));
-        Register(LogType.Update, typeof(UpdateLogParser));
-        /*Register(LogType.RabbitMq, typeof(RabbitLogParser));*/
-        Register(LogType.IIS, typeof(IISLogParser));
-        
-        _logger.LogInfo("Registered 4 default log parsers");
-    }
-    
-    public void Register(LogType logType, Type parserType)
-    {
-        if (!typeof(ILogParser).IsAssignableFrom(parserType))
-        {
-            throw new ArgumentException($"Type {parserType} does not implement ILogParser");
-        }
+    private readonly Dictionary<LogType, Func<ILogParser>> _registry = new();
 
-        _registry[logType] = parserType;
-        _logger.LogInfo($"Registered parser {parserType.Name} for log type {logType}");
-    }
-    
-    public bool IsRegistered(LogType logType) => _registry.ContainsKey(logType);
-    
-    public IEnumerable<LogType> GetRegisteredTypes() => _registry.Keys;
-    
-    public Type GetParserType(LogType logType)
+    public void Register(LogType logType, Func<ILogParser> parserFactory)
     {
-        if (!_registry.TryGetValue(logType, out var type))
-        {
+        if (parserFactory is null)
+            throw new ArgumentNullException(nameof(parserFactory));
+
+        _registry[logType] = parserFactory;
+    }
+
+    public bool IsRegistered(LogType logType) => _registry.ContainsKey(logType);
+
+    public IEnumerable<LogType> GetRegisteredTypes() => _registry.Keys;
+
+    public ILogParser CreateParser(LogType logType)
+    {
+        if (!_registry.TryGetValue(logType, out var factory))
             throw new ArgumentException($"No parser registered for log type: {logType}");
-        }
-        return type;
+
+        return factory();
     }
 }

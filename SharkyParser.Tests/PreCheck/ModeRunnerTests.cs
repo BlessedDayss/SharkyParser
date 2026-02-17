@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Moq;
+using SharkyParser.Cli.Interfaces;
 using SharkyParser.Cli.PreCheck;
-using SharkyParser.Core.Interfaces;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Tests.PreCheck;

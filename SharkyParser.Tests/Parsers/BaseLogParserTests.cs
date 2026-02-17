@@ -6,6 +6,7 @@ using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Models;
 using SharkyParser.Core.Parsers;
 using Xunit;
+using ILogger = SharkyParser.Core.Interfaces.ILogger;
 
 namespace SharkyParser.Tests.Parsers;
 
@@ -14,7 +15,7 @@ public class BaseLogParserTests
     [Fact]
     public void ParseLine_WhenParseLineCoreThrows_ReturnsErrorEntryAndLogs()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new ThrowingParser(logger.Object);
 
         var entry = parser.ParseLine("bad line");
@@ -37,7 +38,7 @@ public class BaseLogParserTests
     [Fact]
     public void ParseFile_AssignsFilePathAndLineNumbers()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new PassThroughParser(logger.Object);
 
         var path = Path.Combine(Path.GetTempPath(), $"parser_{Guid.NewGuid():N}.log");
@@ -63,7 +64,7 @@ public class BaseLogParserTests
     [Fact]
     public async Task ParseFileAsync_ReadsEntries()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new PassThroughParser(logger.Object);
 
         var path = Path.Combine(Path.GetTempPath(), $"parser_async_{Guid.NewGuid():N}.log");
@@ -85,7 +86,7 @@ public class BaseLogParserTests
 
     private sealed class ThrowingParser : BaseLogParser
     {
-        public ThrowingParser(IAppLogger logger) : base(logger) { }
+        public ThrowingParser(ILogger logger) : base(logger) { }
         public override LogType SupportedLogType => LogType.Installation;
         public override string ParserName => "Throwing Parser";
         public override string ParserDescription => "Throwing Parser";
@@ -94,7 +95,7 @@ public class BaseLogParserTests
 
     private sealed class PassThroughParser : BaseLogParser
     {
-        public PassThroughParser(IAppLogger logger) : base(logger) { }
+        public PassThroughParser(ILogger logger) : base(logger) { }
         public override LogType SupportedLogType => LogType.Update;
         public override string ParserName => "PassThrough";
         public override string ParserDescription => "PassThrough";

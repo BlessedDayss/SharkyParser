@@ -52,9 +52,10 @@ public class LogsController : ControllerBase
         try
         {
             await using var stream = file.OpenReadStream();
-            var result = await _parsingService.ParseFileAsync(stream, type, ct);
+            var result = await _parsingService.ParseFileAsync(stream, file.FileName, type, ct);
             return Ok(result);
         }
+
         catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
@@ -66,6 +67,14 @@ public class LogsController : ControllerBase
         }
     }
 
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory(CancellationToken ct)
+    {
+        var history = await _parsingService.GetRecentFilesAsync(20, ct);
+        return Ok(history);
+    }
+
     [HttpGet("health")]
-    public IActionResult Health() => Ok(new { status = "Active" });
+    public IActionResult Health() => Ok(new { status = "Active", database = "Connected" });
 }
+

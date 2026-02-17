@@ -1,4 +1,16 @@
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: sharky_db
+      POSTGRES_USER: sharky_user
+      POSTGRES_PASSWORD: sharky_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: always
+
   api:
     build:
       context: .
@@ -7,9 +19,13 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Database=sharky_db;Username=sharky_user;Password=sharky_password
+    depends_on:
+      - db
     restart: always
 
   web:
+
     build:
       context: ./SharkyParser.Web
       dockerfile: Dockerfile
@@ -18,3 +34,7 @@ services:
     depends_on:
       - api
     restart: always
+
+volumes:
+  db-data:
+

@@ -82,6 +82,36 @@ Open **http://localhost:4200** in your browser.
 
 ---
 
+## Docker & PostgreSQL
+
+The application supports full containerization with **PostgreSQL** for persistent file storage.
+
+### Quick Start with Docker
+
+```bash
+docker compose up --build
+```
+
+- **Web UI**: [http://localhost:8080](http://localhost:8080)
+- **API**: [http://localhost:5000](http://localhost:5000)
+- **PostgreSQL**: `localhost:5432`
+
+### Database Configuration
+
+Managed via `docker-compose.yml`:
+
+| Variable | Default Value |
+|----------|---------------|
+| `POSTGRES_DB` | `sharky_db` |
+| `POSTGRES_USER` | `sharky_user` |
+| `POSTGRES_PASSWORD` | `sharky_password` |
+| `Connection String` | `Host=db;Database=sharky_db;Username=sharky_user;Password=sharky_password` |
+
+The API automatically applies migrations and ensures the database is created on startup.
+
+---
+
+
 ## Features
 
 ### Web UI

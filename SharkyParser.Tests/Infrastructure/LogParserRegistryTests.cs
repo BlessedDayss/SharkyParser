@@ -1,80 +1,104 @@
 using FluentAssertions;
-using Moq;
-using SharkyParser.Core;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Infrastructure;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Models;
+using Xunit;
 
 namespace SharkyParser.Tests.Infrastructure;
 
 public class LogParserRegistryTests
 {
     [Fact]
-    public void Ctor_RegistersDefaultParsers()
+    public void NewRegistry_HasNoParsersRegistered()
     {
-        var logger = new Mock<IAppLogger>();
-        var registry = new LogParserRegistry(logger.Object);
+        var registry = new LogParserRegistry();
+
+        registry.IsRegistered(LogType.Installation).Should().BeFalse();
+        registry.IsRegistered(LogType.Update).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Register_AddsParser_IsRegisteredReturnsTrue()
+    {
+        var registry = new LogParserRegistry();
+        registry.Register(LogType.Installation, () => new TestParser(LogType.Installation));
 
         registry.IsRegistered(LogType.Installation).Should().BeTrue();
-        registry.IsRegistered(LogType.Update).Should().BeTrue();
-        registry.IsRegistered(LogType.IIS).Should().BeTrue();
-        registry.IsRegistered(LogType.RabbitMq).Should().BeFalse();
     }
 
     [Fact]
-    public void Register_WhenTypeDoesNotImplementILogParser_Throws()
+    public void Register_OverwritesExistingEntry()
     {
-        var logger = new Mock<IAppLogger>();
-        var registry = new LogParserRegistry(logger.Object);
+        var registry = new LogParserRegistry();
+        var first = new TestParser(LogType.Installation);
+        var second = new TestParser(LogType.Installation);
 
-        Action action = () => registry.Register(LogType.RabbitMq, typeof(NotAParser));
+        registry.Register(LogType.Installation, () => first);
+        registry.Register(LogType.Installation, () => second);
 
-        action.Should().Throw<ArgumentException>()
-            .WithMessage("*does not implement ILogParser*");
+        registry.CreateParser(LogType.Installation).Should().BeSameAs(second);
     }
 
     [Fact]
-    public void Register_AddsParserType()
+    public void Register_WithNullFactory_ThrowsArgumentNullException()
     {
-        var logger = new Mock<IAppLogger>();
-        var registry = new LogParserRegistry(logger.Object);
+        var registry = new LogParserRegistry();
 
-        registry.Register(LogType.RabbitMq, typeof(TestParser));
+        Action action = () => registry.Register(LogType.Update, null!);
 
-        registry.IsRegistered(LogType.RabbitMq).Should().BeTrue();
-        registry.GetParserType(LogType.RabbitMq).Should().Be(typeof(TestParser));
+        action.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public void GetParserType_WhenNotRegistered_Throws()
+    public void CreateParser_CallsFactoryDelegate()
     {
-        var logger = new Mock<IAppLogger>();
-        var registry = new LogParserRegistry(logger.Object);
+        var registry = new LogParserRegistry();
+        var parser = new TestParser(LogType.Update);
+        registry.Register(LogType.Update, () => parser);
 
-        Action action = () => registry.GetParserType(LogType.RabbitMq);
+        var result = registry.CreateParser(LogType.Update);
+
+        result.Should().BeSameAs(parser);
+    }
+
+    [Fact]
+    public void CreateParser_WhenNotRegistered_ThrowsArgumentException()
+    {
+        var registry = new LogParserRegistry();
+
+        Action action = () => registry.CreateParser(LogType.RabbitMq);
 
         action.Should().Throw<ArgumentException>()
             .WithMessage("*No parser registered*");
     }
 
-    private sealed class NotAParser
+    [Fact]
+    public void GetRegisteredTypes_ReturnsAllRegisteredTypes()
     {
+        var registry = new LogParserRegistry();
+        registry.Register(LogType.Installation, () => new TestParser(LogType.Installation));
+        registry.Register(LogType.IIS,          () => new TestParser(LogType.IIS));
+
+        registry.GetRegisteredTypes().Should().BeEquivalentTo(
+            new[] { LogType.Installation, LogType.IIS });
     }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private sealed class TestParser : ILogParser
     {
-        public LogType SupportedLogType => LogType.RabbitMq;
+        private readonly LogType _type;
+        public TestParser(LogType type) => _type = type;
+
+        public LogType SupportedLogType => _type;
         public string ParserName => "Test";
         public string ParserDescription => "Test parser";
+
         public LogEntry? ParseLine(string line) => null;
         public IEnumerable<LogEntry> ParseFile(string path) => Array.Empty<LogEntry>();
-
         public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
             => Task.FromResult<IEnumerable<LogEntry>>(Array.Empty<LogEntry>());
-
-        public IReadOnlyList<LogColumn> GetColumns() {
-            throw new NotImplementedException();
-        }
+        public IReadOnlyList<LogColumn> GetColumns() => Array.Empty<LogColumn>();
     }
 }

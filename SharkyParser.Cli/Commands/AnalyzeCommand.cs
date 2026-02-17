@@ -1,12 +1,15 @@
 using System.ComponentModel;
-using SharkyParser.Core.Interfaces;
+using SharkyParser.Cli.Formatters;
+using SharkyParser.Core;
 using SharkyParser.Core.Enums;
+using SharkyParser.Core.Interfaces;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Commands;
 
-public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer analyzer) : Command<AnalyzeCommand.Settings>
+public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer analyzer)
+    : Command<AnalyzeCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {
@@ -27,28 +30,13 @@ public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer
     {
         if (string.IsNullOrEmpty(settings.LogTypeString))
         {
-            AnsiConsole.MarkupLine("[red]Error: Log type is required![/]");
-            AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[yellow]Usage:[/] analyze <file> -t <type>");
-            AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[cyan]Available log types:[/]");
-            AnsiConsole.MarkupLine("  [green]installation[/]  - Installation logs");
-            AnsiConsole.MarkupLine("  [green]update[/]        - Update logs");
-            AnsiConsole.MarkupLine("  [green]rabbitmq[/]      - RabbitMQ logs");
-            AnsiConsole.MarkupLine("  [green]iis[/]           - IIS server logs");
-            AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[grey]Example: analyze mylog.log -t installation[/]");
+            PrintUsageError(settings.Embedded);
             return 1;
         }
+
         if (!Enum.TryParse<LogType>(settings.LogTypeString, true, out var logType))
         {
-            AnsiConsole.MarkupLine($"[red]Error: Unknown log type '{settings.LogTypeString}'[/]");
-            AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[cyan]Available log types:[/]");
-            AnsiConsole.MarkupLine("  [green]installation[/]  - Installation logs");
-            AnsiConsole.MarkupLine("  [green]update[/]        - Update logs");
-            AnsiConsole.MarkupLine("  [green]rabbitmq[/]      - RabbitMQ logs");
-            AnsiConsole.MarkupLine("  [green]iis[/]           - IIS server logs");
+            PrintUnknownTypeError(settings.LogTypeString, settings.Embedded);
             return 1;
         }
 
@@ -67,36 +55,15 @@ public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer
             var logs = parser.ParseFile(settings.Path).ToList();
             var stats = analyzer.GetStatistics(logs, logType);
 
-            if (settings.Embedded)
-            {
-                Console.WriteLine($"ANALYSIS|{stats.TotalCount}|{stats.ErrorCount}|{stats.WarningCount}|{stats.InfoCount}|{stats.DebugCount}|{(stats.IsHealthy ? "HEALTHY" : "UNHEALTHY")}|{stats.ExtendedData}");
-                return 0;
-            }
+            IAnalyzeOutputFormatter formatter = settings.Embedded
+                ? new EmbeddedAnalyzeFormatter()
+                : new TableAnalyzeFormatter();
 
-            AnsiConsole.MarkupLine($"[blue]Analyzing with {parser.ParserName}:[/] {settings.Path}");
-            AnsiConsole.WriteLine();
+            formatter.Write(stats, parser.ParserName, settings.Path);
 
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .AddColumn("[blue]Metric[/]")
-                .AddColumn("[blue]Value[/]");
-
-            table.AddRow("Total Entries", stats.TotalCount.ToString());
-            table.AddRow("Errors", $"[red]{stats.ErrorCount}[/]");
-            table.AddRow("Warnings", $"[yellow]{stats.WarningCount}[/]");
-            table.AddRow("Info", $"[green]{stats.InfoCount}[/]");
-            table.AddRow("Debug/Trace", $"[grey]{stats.DebugCount}[/]");
-            AnsiConsole.WriteLine();
-            AnsiConsole.Write(table);
-
-            if (stats.IsHealthy)
-            {
-                AnsiConsole.MarkupLine("[green]✓ Status: All good![/]");
-                return 0;
-            }
-
-            AnsiConsole.MarkupLine("[red]⚠  Status: Errors detected![/]");
-            return 1;
+            // In embedded mode the consumer reads HEALTHY/UNHEALTHY from the output line.
+            // In interactive (table) mode the exit code signals health to the shell.
+            return settings.Embedded || stats.IsHealthy ? 0 : 1;
         }
         catch (Exception ex)
         {
@@ -106,5 +73,35 @@ public sealed class AnalyzeCommand(ILogParserFactory parserFactory, ILogAnalyzer
                 AnsiConsole.MarkupLine($"[red]Analysis failed: {ex.Message}[/]");
             return 1;
         }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static void PrintUsageError(bool embedded)
+    {
+        if (embedded) { Console.WriteLine("ERROR|Log type is required"); return; }
+        AnsiConsole.MarkupLine("[red]Error: Log type is required![/]");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[yellow]Usage:[/] analyze <file> -t <type>");
+        PrintAvailableTypes();
+        AnsiConsole.MarkupLine("[grey]Example: analyze mylog.log -t installation[/]");
+    }
+
+    private static void PrintUnknownTypeError(string type, bool embedded)
+    {
+        if (embedded) { Console.WriteLine($"ERROR|Unknown log type '{type}'"); return; }
+        AnsiConsole.MarkupLine($"[red]Error: Unknown log type '{type}'[/]");
+        AnsiConsole.WriteLine();
+        PrintAvailableTypes();
+    }
+
+    private static void PrintAvailableTypes()
+    {
+        AnsiConsole.MarkupLine("[cyan]Available log types:[/]");
+        AnsiConsole.MarkupLine("  [green]installation[/]  - Installation logs");
+        AnsiConsole.MarkupLine("  [green]update[/]        - Update logs");
+        AnsiConsole.MarkupLine("  [green]rabbitmq[/]      - RabbitMQ logs");
+        AnsiConsole.MarkupLine("  [green]iis[/]           - IIS server logs");
+        AnsiConsole.WriteLine();
     }
 }

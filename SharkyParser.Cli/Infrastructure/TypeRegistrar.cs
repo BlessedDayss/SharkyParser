@@ -1,6 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using SharkyParser.Core;
-using SharkyParser.Core.Interfaces;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.Infrastructure;
@@ -15,37 +13,14 @@ public sealed class TypeRegistrar : ITypeRegistrar
     }
 
     public ITypeResolver Build()
-    {
-        return new TypeResolver(_services.BuildServiceProvider());
-    }
+        => new TypeResolver(_services.BuildServiceProvider());
 
     public void Register(Type service, Type implementation)
-    {
-        _services.AddSingleton(service, implementation);
-    }
+        => _services.AddSingleton(service, implementation);
 
     public void RegisterInstance(Type service, object implementation)
-    {
-        _services.AddSingleton(service, implementation);
-    }
+        => _services.AddSingleton(service, implementation);
 
     public void RegisterLazy(Type service, Func<object> factory)
-    {
-        _services.AddSingleton(service, _ => factory());
-    }
-}
-
-public sealed class TypeResolver : ITypeResolver
-{
-    private readonly IServiceProvider _provider;
-
-    public TypeResolver(IServiceProvider provider)
-    {
-        _provider = provider;
-    }
-
-    public object? Resolve(Type? type)
-    {
-        return type == null ? null : _provider.GetService(type);
-    }
+        => _services.AddSingleton(service, _ => factory());
 }

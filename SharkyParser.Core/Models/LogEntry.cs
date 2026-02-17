@@ -17,5 +17,5 @@ public record LogEntry
     /// </summary>
     public Dictionary<string, string> Fields { get; init; } = new();
 
-    public string Source { get; set; } = string.Empty;
+    public string Source { get; init; } = string.Empty;
 }

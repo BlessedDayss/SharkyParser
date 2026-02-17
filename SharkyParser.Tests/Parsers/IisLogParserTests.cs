@@ -4,17 +4,18 @@ using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Parsers;
 using SharkyParser.Core.Models;
 using Xunit;
+using ILogger = SharkyParser.Core.Interfaces.ILogger;
 
 namespace SharkyParser.Tests.Parsers;
 
 public class IISLogParserTests
 {
-    private readonly Mock<IAppLogger> _logger;
+    private readonly Mock<ILogger> _logger;
     private readonly IISLogParser _parser;
 
     public IISLogParserTests()
     {
-        _logger = new Mock<IAppLogger>();
+        _logger = new Mock<ILogger>();
         _parser = new IISLogParser(_logger.Object);
     }
 

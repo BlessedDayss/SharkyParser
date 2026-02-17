@@ -1,16 +1,10 @@
-using SharkyParser.Core.Interfaces;
+using SharkyParser.Cli.Interfaces;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Cli.PreCheck;
 
-public interface ICliModeRunner 
-{ 
-    int Run(string[] args); 
-}
-
 public class CliModeRunner(CommandApp app, IAppLogger logger) : ICliModeRunner
 {
-    
     public int Run(string[] args)
     {
         logger.LogInfo($"CLI mode: executing command '{string.Join(" ", args)}'");

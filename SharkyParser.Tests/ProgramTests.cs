@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using SharkyParser.Cli;
+using SharkyParser.Cli.Interfaces;
 using SharkyParser.Cli.PreCheck;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Parsers;
@@ -29,7 +30,6 @@ public class ProgramTests
     [Fact]
     public void ConfigureServices_RegistersAllRequiredServices()
     {
-        // Use reflection to call private ConfigureServices method
         var method = typeof(Program).GetMethod("ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
@@ -44,14 +44,12 @@ public class ProgramTests
     [Fact]
     public void ConfigureServices_AllParserTypesCanBeResolved()
     {
-        // Use reflection to call private ConfigureServices method
         var method = typeof(Program).GetMethod("ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
         var services = method!.Invoke(null, null) as IServiceCollection;
         using var provider = services!.BuildServiceProvider();
 
-        // Verify all parsers can be resolved
         var installationParser = provider.GetService<InstallationLogParser>();
         var updateParser = provider.GetService<UpdateLogParser>();
         var iisParser = provider.GetService<IISLogParser>();
@@ -64,36 +62,36 @@ public class ProgramTests
     [Fact]
     public void ConfigureServices_AllCoreServicesCanBeResolved()
     {
-        // Use reflection to call private ConfigureServices method
         var method = typeof(Program).GetMethod("ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
         var services = method!.Invoke(null, null) as IServiceCollection;
         using var provider = services!.BuildServiceProvider();
 
-        // Verify all core services can be resolved
         var logParserRegistry = provider.GetService<ILogParserRegistry>();
         var logParserFactory = provider.GetService<ILogParserFactory>();
         var logAnalyzer = provider.GetService<ILogAnalyzer>();
+
+        // Both ILogger (Core) and IAppLogger (CLI) should be resolvable
+        var coreLogger = provider.GetService<ILogger>();
         var appLogger = provider.GetService<IAppLogger>();
 
         logParserRegistry.Should().NotBeNull();
         logParserFactory.Should().NotBeNull();
         logAnalyzer.Should().NotBeNull();
+        coreLogger.Should().NotBeNull();
         appLogger.Should().NotBeNull();
     }
 
     [Fact]
     public void ConfigureServices_AllModeRunnersCanBeResolved()
     {
-        // Use reflection to call private ConfigureServices method
         var method = typeof(Program).GetMethod("ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
         var services = method!.Invoke(null, null) as IServiceCollection;
         using var provider = services!.BuildServiceProvider();
 
-        // Verify all mode runners can be resolved
         var cliRunner = provider.GetService<ICliModeRunner>();
         var interactiveRunner = provider.GetService<IInteractiveModeRunner>();
         var embeddedRunner = provider.GetService<IEmbeddedModeRunner>();
@@ -106,7 +104,6 @@ public class ProgramTests
     [Fact]
     public void ConfigureServices_ApplicationRunnerCanBeResolved()
     {
-        // Use reflection to call private ConfigureServices method
         var method = typeof(Program).GetMethod("ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
@@ -121,7 +118,6 @@ public class ProgramTests
     [Fact]
     public void ConfigureServices_ApplicationModeDetectorCanBeResolved()
     {
-        // Use reflection to call private ConfigureServices method
         var method = typeof(Program).GetMethod("ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
@@ -147,7 +143,6 @@ public class ProgramTests
     [Fact]
     public void Main_WithMissingRequiredArguments_ReturnsError()
     {
-        // Parse command without required arguments should return error
         var exitCode = Program.Main(["parse"]);
 
         exitCode.Should().NotBe(0);
@@ -156,9 +151,7 @@ public class ProgramTests
     [Fact]
     public void Main_Integration_ParseCommand_WithNonExistentFile_ReturnsError()
     {
-
         var exitCode = Program.Main(["parse", "non-existent-file.log", "--type", "update"]);
-
 
         exitCode.Should().NotBe(0);
     }

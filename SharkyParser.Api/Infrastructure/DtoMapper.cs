@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using SharkyParser.Api.Data.Models;
 using SharkyParser.Api.DTOs;
 using SharkyParser.Core;
 using SharkyParser.Core.Enums;
@@ -12,6 +13,9 @@ namespace SharkyParser.Api.Infrastructure;
 /// </summary>
 public static class DtoMapper
 {
+    public static FileRecordDto ToDto(FileRecord record) =>
+        new(record.Id, record.FileName, record.FileSize, record.LogType, record.UploadedAt);
+
     public static LogEntryDto ToDto(LogEntry entry)
     {
         return new LogEntryDto

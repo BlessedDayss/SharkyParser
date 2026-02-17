@@ -11,15 +11,10 @@ namespace SharkyParser.Tests.Infrastructure;
 [Collection("Console")]
 public class StartupTests
 {
-    [Fact]
-    public void ConfigureServices_RegistersLogAnalyzer()
-    {
-        var services = Startup.ConfigureServices();
-        using var provider = services.BuildServiceProvider();
-
-        provider.GetService<ILogAnalyzer>().Should().BeOfType<LogAnalyzer>();
-    }
-
+    /// <summary>
+    /// Verifies that Startup.ConfigureCommands wires up the command tree correctly
+    /// and the app can respond to --help without throwing.
+    /// </summary>
     [Fact]
     public void ConfigureCommands_AllowsHelpExecution()
     {
@@ -41,6 +36,5 @@ public class StartupTests
         public ILogParser CreateParser(LogType logType) => throw new NotImplementedException();
         public ILogParser CreateParser(LogType logType, StackTraceMode stackTraceMode) => throw new NotImplementedException();
         public IEnumerable<LogType> GetAvailableTypes() => Array.Empty<LogType>();
-        public ILogParser GetParserForType(LogType logType) => throw new NotImplementedException();
     }
 }

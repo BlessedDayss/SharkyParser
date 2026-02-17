@@ -4,6 +4,7 @@ using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Parsers;
 using SharkyParser.Core.Models;
 using Xunit;
+using ILogger = SharkyParser.Core.Interfaces.ILogger;
 
 namespace SharkyParser.Tests.Parsers;
 
@@ -12,7 +13,7 @@ public class UpdateLogParserTests
     [Fact]
     public void ParseLine_WithTimestamp_ParsesEntry()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new UpdateLogParser(logger.Object);
 
         var entry = parser.ParseLine("2024-01-02 03:04:05 [Updater] Installing package: Success");
@@ -28,7 +29,7 @@ public class UpdateLogParserTests
     [Fact]
     public void ParseLine_WithFailedStatus_ReturnsErrorLevel()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new UpdateLogParser(logger.Object);
 
         var entry = parser.ParseLine("[Updater] Installing package: Failed");
@@ -41,7 +42,7 @@ public class UpdateLogParserTests
     [Fact]
     public void ParseLine_WithWarningStatus_ReturnsWarnLevel()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new UpdateLogParser(logger.Object);
 
         var entry = parser.ParseLine("[Updater] Installing package: Warning");
@@ -53,7 +54,7 @@ public class UpdateLogParserTests
     [Fact]
     public void ParseLine_WhenNoMatch_ReturnsNull()
     {
-        var logger = new Mock<IAppLogger>();
+        var logger = new Mock<ILogger>();
         var parser = new UpdateLogParser(logger.Object);
 
         var entry = parser.ParseLine("Some other line");
