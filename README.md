@@ -2,7 +2,7 @@
 
 **Sharky Parser PRO** is a high-performance log analysis ecosystem designed for modern developers and DevOps teams. It delivers a seamless experience through a cross-platform CLI, a robust .NET 8 API, and a premium Angular-based Log Explorer.
 
-[![Release](https://img.shields.io/github/v/release/BlessedDayss/SharkyParser?style=flat-square&color=3399ff)](https://github.com/BlessedDayss/SharkyParser/releases)
+[![Release](https://img.shields.io/github/v/release/sharkello/SharkyParser?style=flat-square&color=3399ff)](https://github.com/sharkello/SharkyParser/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 ---

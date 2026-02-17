@@ -5,14 +5,14 @@
       <TargetFramework>net8.0</TargetFramework>
       <ImplicitUsings>enable</ImplicitUsings>
       <Nullable>enable</Nullable>
-        
+
       <!-- Tool Settings -->
       <PackAsTool>true</PackAsTool>
       <ToolCommandName>sharky</ToolCommandName>
       <PackageId>SharkyParser</PackageId>
       <PackageOutputPath>./nupkg</PackageOutputPath>
       <Version>2.0.0</Version>
-        
+
       <!-- NuGet Metadata -->
       <Authors>sharkello</Authors>
       <Description>A fast and flexible log parser and analyzer CLI tool.</Description>
