@@ -6,7 +6,7 @@ import { LogService } from '../../core/services/log.service';
 import { FileSelectionService } from '../../core/services/file-selection.service';
 import { LogDataService } from '../../core/services/log-data.service';
 import { LogEntry } from '../../core/models/log-entry';
-import { LogStatistics } from '../../core/models/parse-result';
+import { LogStatistics, LogColumn } from '../../core/models/parse-result';
 
 @Component({
   selector: 'app-log-explorer',
@@ -22,6 +22,7 @@ export class LogExplorerComponent implements OnInit {
   private readonly router = inject(Router);
 
   entries = signal<LogEntry[]>([]);
+  columns = signal<LogColumn[]>([]);
   statistics = signal<LogStatistics | null>(null);
   searchTerm = signal('');
   levelFilter = signal('ALL');
@@ -45,22 +46,18 @@ export class LogExplorerComponent implements OnInit {
     });
   });
 
-  // Watch for file changes reactively — handles the case when
-  // the component is already mounted and a new file is selected
   private fileWatcher = effect(() => {
     const file = this.fileSelection.getPendingFile();
     const logType = this.fileSelection.getPendingLogType();
 
     if (file && logType) {
-      this.fileSelection.clear(); // consume it
+      this.fileSelection.clear();
       this.selectedLogType.set(logType);
       this.parseFile(file, logType);
     }
   });
 
-  ngOnInit() {
-    // pendingFile effect above handles everything now
-  }
+  ngOnInit() { }
 
   onFileDropped(file: File) {
     this.parseFile(file, this.selectedLogType());
@@ -72,11 +69,13 @@ export class LogExplorerComponent implements OnInit {
     this.error.set(null);
     this.logService.parse(file, logType).subscribe({
       next: (result) => {
+        console.log('Parse result:', result);
+        console.log('Columns received:', result.columns);
         this.entries.set(result.entries);
+        this.columns.set(result.columns);
         this.statistics.set(result.statistics);
         this.logData.setData(result.entries, result.statistics, file, logType);
         this.loading.set(false);
-        // Show AI prompt after a short delay once parsing completes
         if (!this.aiPromptDismissed()) {
           setTimeout(() => this.showAiPrompt.set(true), 1200);
         }
@@ -86,6 +85,17 @@ export class LogExplorerComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  getFieldValue(entry: LogEntry, colName: string): string {
+    if (colName === 'Timestamp') return this.formatTimestamp(entry.timestamp);
+    if (colName === 'Level') return entry.level;
+    if (colName === 'Message') return entry.message;
+    return entry.fields[colName] || '';
+  }
+
+  isPredefined(colName: string): boolean {
+    return ['Timestamp', 'Level', 'Message'].includes(colName);
   }
 
   setLevelFilter(level: string) {

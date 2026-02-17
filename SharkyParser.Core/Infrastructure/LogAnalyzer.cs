@@ -1,4 +1,5 @@
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 
 namespace SharkyParser.Core;
 

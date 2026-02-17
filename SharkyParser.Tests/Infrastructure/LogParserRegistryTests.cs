@@ -4,6 +4,7 @@ using SharkyParser.Core;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Infrastructure;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 
 namespace SharkyParser.Tests.Infrastructure;
 
@@ -71,5 +72,9 @@ public class LogParserRegistryTests
 
         public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
             => Task.FromResult<IEnumerable<LogEntry>>(Array.Empty<LogEntry>());
+
+        public IReadOnlyList<LogColumn> GetColumns() {
+            throw new NotImplementedException();
+        }
     }
 }

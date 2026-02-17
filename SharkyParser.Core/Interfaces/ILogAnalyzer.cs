@@ -1,3 +1,5 @@
+using SharkyParser.Core.Models;
+
 namespace SharkyParser.Core.Interfaces;
 
 public interface ILogAnalyzer

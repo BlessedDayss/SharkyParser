@@ -2,6 +2,7 @@
 using System.Globalization;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 
 namespace SharkyParser.Core.Parsers;
 
@@ -25,17 +26,37 @@ public partial class UpdateLogParser : BaseLogParser
             var status = match.Groups["status"].Value;
             var level = GetUpdateLevel(action, status);
 
-            return new LogEntry
+            var entry = new LogEntry
             {
                 Timestamp = ParseTimestamp(match.Groups["timestamp"].Value),
                 Level = level,
-                Source = match.Groups["component"].Value,
                 Message = $"{action} {match.Groups["target"].Value}: {status}",
                 RawData = line
             };
+
+            entry.Fields["Component"] = match.Groups["component"].Value;
+            entry.Fields["Action"] = action;
+            entry.Fields["Target"] = match.Groups["target"].Value;
+            entry.Fields["Status"] = status;
+
+            return entry;
         }
 
         return null;
+    }
+
+    public override IReadOnlyList<LogColumn> GetColumns()
+    {
+        return new List<LogColumn>
+        {
+            new("Timestamp", "Timestamp", "The date and time of the event.", true),
+            new("Level", "Level", "The severity level.", true),
+            new("Component", "Component", "The component reporting the event.", false),
+            new("Action", "Action", "The action performed.", false),
+            new("Target", "Target", "The target of the action.", false),
+            new("Status", "Status", "The result of the action.", false),
+            new("Message", "Message", "Full summary message.", true)
+        };
     }
 
     private static string GetUpdateLevel(string action, string status)

@@ -53,19 +53,27 @@
       <table class="log-table">
         <thead>
           <tr>
-            <th style="width: 180px">Timestamp</th>
-            <th style="width: 100px">Level</th>
-            <th>Message</th>
+            @for (col of columns(); track col.name) {
+            <th [style.width]="col.name === 'Timestamp' ? '180px' : col.name === 'Level' ? '100px' : 'auto'">
+              {{ col.header }}
+            </th>
+            }
           </tr>
         </thead>
         <tbody>
           @for (entry of filteredEntries().slice(0, 10000); track entry.id) {
           <tr class="log-row" (click)="openModal(entry)" (keydown.enter)="openModal(entry)" tabindex="0">
-            <td class="timestamp">{{ formatTimestamp(entry.timestamp) }}</td>
+            @for (col of columns(); track col.name) {
             <td>
+              @if (col.name === 'Level') {
               <span class="level-tag" [class]="'level-' + entry.level.toLowerCase()">{{ entry.level }}</span>
+              } @else if (col.name === 'Timestamp') {
+              <span class="timestamp">{{ formatTimestamp(entry.timestamp) }}</span>
+              } @else {
+              <span [class.message]="col.name === 'Message'">{{ getFieldValue(entry, col.name) }}</span>
+              }
             </td>
-            <td class="message">{{ entry.message }}</td>
+            }
           </tr>
           }
         </tbody>
@@ -117,10 +125,17 @@
         <strong>Message:</strong>
         <pre class="message-pre">{{ entry.message }}</pre>
       </div>
-      @if (entry.stackTrace) {
+
+      @for (field of entry.fields | keyvalue; track field.key) {
       <div class="detail-section">
-        <strong>Stack Trace:</strong>
-        <pre class="stack-pre">{{ entry.stackTrace }}</pre>
+        <strong>{{ field.key }}:</strong> {{ field.value }}
+      </div>
+      }
+
+      @if (entry.rawData) {
+      <div class="detail-section">
+        <strong>Raw Data:</strong>
+        <pre class="stack-pre">{{ entry.rawData }}</pre>
       </div>
       }
     </div>

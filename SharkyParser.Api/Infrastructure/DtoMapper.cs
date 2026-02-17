@@ -2,6 +2,7 @@ using System.ComponentModel;
 using SharkyParser.Api.DTOs;
 using SharkyParser.Core;
 using SharkyParser.Core.Enums;
+using SharkyParser.Core.Models;
 
 namespace SharkyParser.Api.Infrastructure;
 
@@ -18,12 +19,21 @@ public static class DtoMapper
             Timestamp = entry.Timestamp.ToString("O"),
             Level = entry.Level,
             Message = entry.Message,
-            Source = entry.Source,
-            StackTrace = entry.StackTrace,
             LineNumber = entry.LineNumber,
             FilePath = entry.FilePath,
-            RawData = entry.RawData
+            RawData = entry.RawData,
+            Fields = new Dictionary<string, string>(entry.Fields)
         };
+    }
+
+    public static LogColumnDto ToDto(LogColumn column)
+    {
+        return new LogColumnDto(
+            column.Name,
+            column.Header,
+            column.Description,
+            column.IsPredefined
+        );
     }
 
     public static LogStatisticsDto ToDto(LogStatistics statistics)

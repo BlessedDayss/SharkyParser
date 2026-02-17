@@ -5,6 +5,7 @@ using SharkyParser.Cli.Infrastructure;
 using SharkyParser.Core;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Tests.Commands;
@@ -25,7 +26,6 @@ public class ParseCommandTests
                 Level = "ERROR",
                 Message = "bad|msg\nline2",
                 Source = "Updater",
-                StackTrace = "stack|trace",
                 LineNumber = 1,
                 FilePath = "file.log",
                 RawData = "raw"
@@ -252,6 +252,10 @@ public class ParseCommandTests
         public IEnumerable<LogEntry> ParseFile(string path) => _entries;
         public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
             => Task.FromResult<IEnumerable<LogEntry>>(_entries);
+
+        public IReadOnlyList<LogColumn> GetColumns() {
+            throw new NotImplementedException();
+        }
     }
 
     private sealed class ThrowingLogParserFactory : ILogParserFactory

@@ -42,7 +42,7 @@ export class AnalyticsComponent {
     const e = this.entries();
     const map = new Map<string, number>();
     for (const entry of e) {
-      const s = entry.source || 'Unknown';
+      const s = entry.fields['Source'] || entry.fields['Component'] || 'Unknown';
       map.set(s, (map.get(s) ?? 0) + 1);
     }
     return Array.from(map.entries())

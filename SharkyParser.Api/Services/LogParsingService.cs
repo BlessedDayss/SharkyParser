@@ -47,12 +47,14 @@ public sealed class LogParsingService : ILogParsingService
 
             var parser = _parserFactory.GetParserForType(logType);
             var entries = (await parser.ParseFileAsync(tempPath)).ToList();
+            var columns = parser.GetColumns();
             var statistics = _analyzer.GetStatistics(entries);
 
             _logger.LogFileProcessed(tempPath);
 
             return new ParseResultDto(
                 entries.Select(DtoMapper.ToDto).ToList(),
+                columns.Select(DtoMapper.ToDto).ToList(),
                 DtoMapper.ToDto(statistics)
             );
         }

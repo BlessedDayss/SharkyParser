@@ -20,10 +20,11 @@ export class LogService {
     formData.append('logType', logType);
 
     return this.http
-      .post<{ entries: LogEntry[]; statistics: any }>('/api/logs/parse', formData)
+      .post<{ entries: LogEntry[]; columns: any[]; statistics: any }>('/api/logs/parse', formData)
       .pipe(
         map((res) => ({
           entries: res.entries.map((e, i) => ({ ...e, id: i })),
+          columns: res.columns,
           statistics: res.statistics
         }))
       );

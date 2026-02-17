@@ -5,6 +5,7 @@ using SharkyParser.Cli.Infrastructure;
 using SharkyParser.Core;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 using Spectre.Console.Cli;
 
 namespace SharkyParser.Tests.Commands;
@@ -19,8 +20,16 @@ public class AnalyzeCommandTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "ERROR", Message = "bad" },
-            new() { Level = "INFO", Message = "ok" }
+            new() {
+                Level = "ERROR",
+                Message = "bad",
+                Timestamp = default
+            },
+            new() {
+                Level = "INFO",
+                Message = "ok",
+                Timestamp = default
+            }
         };
         var parser = new FakeLogParser(LogType.Update, entries);
         var factory = new FakeLogParserFactory(parser);
@@ -244,6 +253,10 @@ public class AnalyzeCommandTests
         public IEnumerable<LogEntry> ParseFile(string path) => _entries;
         public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
             => Task.FromResult<IEnumerable<LogEntry>>(_entries);
+
+        public IReadOnlyList<LogColumn> GetColumns() {
+            throw new NotImplementedException();
+        }
     }
 
     private sealed class FakeAnalyzer : ILogAnalyzer

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SharkyParser.Core;
+using SharkyParser.Core.Models;
 
 namespace SharkyParser.Tests;
 
@@ -12,8 +13,16 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "INFO", Message = "Starting" },
-            new() { Level = "ERROR", Message = "Failed" }
+            new() {
+                Level = "INFO",
+                Message = "Starting",
+                Timestamp = default
+            },
+            new() {
+                Level = "ERROR",
+                Message = "Failed",
+                Timestamp = default
+            }
         };
 
         _sut.HasErrors(entries).Should().BeTrue();
@@ -24,7 +33,11 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "FATAL", Message = "Crash" }
+            new() {
+                Level = "FATAL",
+                Message = "Crash",
+                Timestamp = default
+            }
         };
 
         _sut.HasErrors(entries).Should().BeTrue();
@@ -35,7 +48,11 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "INFO", Message = "All good" }
+            new() {
+                Level = "INFO",
+                Message = "All good",
+                Timestamp = default
+            }
         };
 
         _sut.HasErrors(entries).Should().BeFalse();
@@ -46,7 +63,11 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "WARN", Message = "Be careful" }
+            new() {
+                Level = "WARN",
+                Message = "Be careful",
+                Timestamp = default
+            }
         };
 
         _sut.HasWarnings(entries).Should().BeTrue();
@@ -57,10 +78,26 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "INFO", Message = "Info 1" },
-            new() { Level = "INFO", Message = "Info 2" },
-            new() { Level = "WARN", Message = "Warning" },
-            new() { Level = "ERROR", Message = "Error" }
+            new() {
+                Level = "INFO",
+                Message = "Info 1",
+                Timestamp = default
+            },
+            new() {
+                Level = "INFO",
+                Message = "Info 2",
+                Timestamp = default
+            },
+            new() {
+                Level = "WARN",
+                Message = "Warning",
+                Timestamp = default
+            },
+            new() {
+                Level = "ERROR",
+                Message = "Error",
+                Timestamp = default
+            }
         };
 
         var stats = _sut.GetStatistics(entries);
@@ -77,8 +114,16 @@ public class LogAnalyzerTests
     {
         var entries = new List<LogEntry>
         {
-            new() { Level = "INFO", Message = "Good" },
-            new() { Level = "WARN", Message = "Warning" }
+            new() {
+                Level = "INFO",
+                Message = "Good",
+                Timestamp = default
+            },
+            new() {
+                Level = "WARN",
+                Message = "Warning",
+                Timestamp = default
+            }
         };
 
         var stats = _sut.GetStatistics(entries);

@@ -3,6 +3,7 @@ using Moq;
 using SharkyParser.Core;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 using SharkyParser.Core.Parsers;
 using Xunit;
 
@@ -22,7 +23,6 @@ public class BaseLogParserTests
         entry!.Level.Should().Be("ERROR");
         entry.Message.Should().StartWith("Parse error:");
         entry.RawData.Should().Be("bad line");
-        entry.Source.Should().Be(parser.ParserName);
 
         logger.Verify(
             l => l.LogError(
@@ -98,6 +98,10 @@ public class BaseLogParserTests
         public override LogType SupportedLogType => LogType.Update;
         public override string ParserName => "PassThrough";
         public override string ParserDescription => "PassThrough";
-        protected override LogEntry? ParseLineCore(string line) => new() { Message = line, RawData = line };
+        protected override LogEntry? ParseLineCore(string line) => new() {
+            Message = line,
+            RawData = line,
+            Timestamp = default
+        };
     }
 }

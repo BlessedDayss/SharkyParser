@@ -3,8 +3,8 @@ export interface LogEntry {
   timestamp: string;
   level: string;
   message: string;
-  source: string;
-  stackTrace: string;
   lineNumber?: number;
   filePath?: string;
+  rawData?: string;
+  fields: Record<string, string>;
 }

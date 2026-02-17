@@ -52,8 +52,9 @@ export class LogDataService {
       lines.push(`--- ERRORS (${errors.length}) ---`);
       for (const e of errors.slice(0, 50)) {
         lines.push(`[${e.timestamp}] ${e.level}: ${e.message}`);
-        if (e.stackTrace) {
-          lines.push(`  Stack: ${e.stackTrace.substring(0, 300)}`);
+        const stackTrace = e.fields['StackTrace'];
+        if (stackTrace) {
+          lines.push(`  Stack: ${stackTrace.substring(0, 300)}`);
         }
       }
       lines.push('');

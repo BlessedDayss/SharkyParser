@@ -2,6 +2,7 @@ using FluentAssertions;
 using Moq;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Parsers;
+using SharkyParser.Core.Models;
 using Xunit;
 
 namespace SharkyParser.Tests.Parsers;
@@ -19,7 +20,7 @@ public class UpdateLogParserTests
         entry.Should().NotBeNull();
         entry!.Timestamp.Should().Be(new DateTime(2024, 1, 2, 3, 4, 5));
         entry.Level.Should().Be("INFO");
-        entry.Source.Should().Be("Updater");
+        entry.Fields["Component"].Should().Be("Updater");
         entry.Message.Should().Be("Installing package: Success");
         entry.RawData.Should().Be("2024-01-02 03:04:05 [Updater] Installing package: Success");
     }

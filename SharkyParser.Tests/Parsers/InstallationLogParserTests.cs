@@ -3,6 +3,7 @@ using Moq;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Parsers;
+using SharkyParser.Core.Models;
 using Xunit;
 
 namespace SharkyParser.Tests.Parsers;
@@ -10,7 +11,7 @@ namespace SharkyParser.Tests.Parsers;
 public class InstallationLogParserTests
 {
     [Fact]
-    public void ParseFile_AllToStackTrace_AppendsToStackTrace()
+    public void ParseFile_AllToStackTrace_AppendsToStackTraceInFields()
     {
         var logger = new Mock<IAppLogger>();
         var parser = new InstallationLogParser(logger.Object);
@@ -27,7 +28,7 @@ public class InstallationLogParserTests
             entry.Timestamp.Should().Be(new DateTime(2024, 12, 31, 1, 2, 3));
             entry.Level.Should().Be("INFO");
             entry.Message.Should().Be("INFO First line");
-            entry.StackTrace.Should().Be($"second line{Environment.NewLine}third line");
+            entry.Fields["StackTrace"].Should().Be($"second line{Environment.NewLine}third line");
             entry.RawData.Should().Be(string.Join(Environment.NewLine, lines));
         }
         finally
@@ -52,7 +53,7 @@ public class InstallationLogParserTests
         {
             var entry = parser.ParseFile(path).Single();
 
-            entry.StackTrace.Should().BeEmpty();
+            entry.Fields.Should().NotContainKey("StackTrace");
             entry.Message.Should().Be($"INFO First line{Environment.NewLine}second line{Environment.NewLine}third line");
         }
         finally

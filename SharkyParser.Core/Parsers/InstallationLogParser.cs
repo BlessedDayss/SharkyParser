@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
+using SharkyParser.Core.Models;
 
 namespace SharkyParser.Core.Parsers;
 
@@ -28,7 +29,7 @@ public class InstallationLogParser : BaseLogParser
         
         var baseDate = ExtractDateFromFileName(path) ?? File.GetLastWriteTime(path).Date;
         
-        _logger.LogInfo("Started to parse Installation log file: " + path);
+        Logger.LogInfo("Started to parse Installation log file: " + path);
 
         foreach (var line in File.ReadLines(path))
         {
@@ -50,11 +51,13 @@ public class InstallationLogParser : BaseLogParser
             {
                 if (StackTraceMode == StackTraceMode.AllToStackTrace)
                 {
+                    var currentST = currentEntry.Fields.TryGetValue("StackTrace", out var st) ? st : "";
+                    currentEntry.Fields["StackTrace"] = string.IsNullOrEmpty(currentST)
+                            ? line
+                            : currentST + Environment.NewLine + line;
+                    
                     currentEntry = currentEntry with
                     {
-                        StackTrace = string.IsNullOrEmpty(currentEntry.StackTrace)
-                            ? line
-                            : currentEntry.StackTrace + Environment.NewLine + line,
                         RawData = currentEntry.RawData + Environment.NewLine + line
                     };
                 }
@@ -78,6 +81,18 @@ public class InstallationLogParser : BaseLogParser
             yield return currentEntry;
         }
     }
+
+    public override IReadOnlyList<LogColumn> GetColumns()
+    {
+        return new List<LogColumn>
+        {
+            new("Timestamp", "Timestamp", "The date and time of the installation event.", true),
+            new("Level", "Level", "The severity level.", true),
+            new("Message", "Message", "The installation log message.", true),
+            new("Source", "Source", "The source component.", false),
+            new("StackTrace", "Stack Trace", "Detailed error information.", false)
+        };
+    }
     
     private DateTime? ExtractDateFromFileName(string path)
     {
@@ -98,7 +113,7 @@ public class InstallationLogParser : BaseLogParser
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error extracting date from file name '{path}': {ex}");
+            Logger.LogError($"Error extracting date from file name '{path}': {ex}");
         }
 
         return null;
@@ -120,16 +135,13 @@ public class InstallationLogParser : BaseLogParser
         {
             var timestampStr = match.Groups["timestamp"].Value;
             
-            // Handle HH:MM:SS (8 chars) or HH:MM:SS:NNNN / HH:MM:SS.NNNN (bare time with optional ms)
             var timePart = timestampStr;
-            // Normalize "21:21:47:6804" → keep only HH:MM:SS for TimeSpan parsing, preserve ms
             var colonCount = timePart.Split(':').Length - 1;
             TimeSpan parsedTime = default;
             bool timeOk = false;
 
             if (colonCount >= 3)
             {
-                // Format like 21:21:47:6804 — 4th segment is milliseconds
                 var segments = timePart.Split(':');
                 if (TimeSpan.TryParse($"{segments[0]}:{segments[1]}:{segments[2]}", out parsedTime))
                 {
@@ -157,15 +169,18 @@ public class InstallationLogParser : BaseLogParser
             }
         }
 
-        return new LogEntry
+        var entry = new LogEntry
         {
             Timestamp = timestamp,
             Level = LevelDetector.Detect(message),
-            Source = "Installation",
             Message = message,
             RawData = line,
             FilePath = filePath,
             LineNumber = lineNumber
         };
+        
+        entry.Fields["Source"] = "Installation";
+        
+        return entry;
     }
 }
