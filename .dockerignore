@@ -1,0 +1,9 @@
+**/.git
+**/.idea
+**/.vscode
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/out
+SharkyParser.Ui
