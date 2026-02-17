@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
 using SharkyParser.Core.Models;
@@ -16,9 +16,7 @@ public class IISLogParser(ILogger logger) : BaseLogParser(logger)
     /// a single cached instance does not bleed headers from one file to the next.
     /// </summary>
     private string[]? _headers;
-
-    // ── ParseFile override: reset per-file state ─────────────────────────────
-
+    
     public override IEnumerable<LogEntry> ParseFile(string path)
     {
         _headers = null;
@@ -31,7 +29,6 @@ public class IISLogParser(ILogger logger) : BaseLogParser(logger)
         return await Task.Run(() => base.ParseFile(path));
     }
 
-    // ── Core parsing ─────────────────────────────────────────────────────────
 
     protected override LogEntry? ParseLineCore(string line)
     {
@@ -45,10 +42,7 @@ public class IISLogParser(ILogger logger) : BaseLogParser(logger)
             return null;
         }
 
-        if (_headers == null)
-            return null;
-
-        return ParseIisLine(line, _headers);
+        return _headers == null ? null : ParseIisLine(line, _headers);
     }
 
     private static LogEntry? ParseIisLine(string line, string[] headers)
@@ -76,7 +70,6 @@ public class IISLogParser(ILogger logger) : BaseLogParser(logger)
                 dynamicFields[header] = value;
         }
 
-        // Compute timestamp
         DateTime timestamp = DateTime.MinValue;
         if (datePart != null && timePart != null)
         {
@@ -92,7 +85,6 @@ public class IISLogParser(ILogger logger) : BaseLogParser(logger)
             DateTime.TryParse(datePart, out timestamp);
         }
 
-        // Compute level and message from IIS fields
         var level = dynamicFields.TryGetValue("sc-status", out var sc)
             ? GetLevelFromStatusCode(sc)
             : LogLevel.Info;
@@ -149,8 +141,8 @@ public class IISLogParser(ILogger logger) : BaseLogParser(logger)
 
     private static string GetFriendlyFieldName(string w3cField) => w3cField switch
     {
-        "s-sitename"       => "Site Name",
-        "s-computername"   => "Server Name",
+        "s-sitename" => "Site Name",
+        "s-computername"  => "Server Name",
         "s-ip"             => "Server IP",
         "cs-method"        => "Method",
         "cs-uri-query"     => "Query String",

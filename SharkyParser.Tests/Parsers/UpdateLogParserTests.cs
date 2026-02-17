@@ -52,13 +52,52 @@ public class UpdateLogParserTests
     }
 
     [Fact]
-    public void ParseLine_WhenNoMatch_ReturnsNull()
+    public void ParseLine_WithTimeOnlyFormat_ParsesEntryUsingBaseDate()
+    {
+        var logger = new Mock<ILogger>();
+        var parser = new UpdateLogParser(logger.Object);
+        var baseDate = new DateTime(2023, 10, 27);
+
+        var tempFile = Path.GetTempFileName();
+        var fileNameWithDate = "Update_2023_10_27_log.txt";
+        var fullPath = Path.Combine(Path.GetDirectoryName(tempFile)!, fileNameWithDate);
+        File.WriteAllText(fullPath, "16:34:18.3717 Current Updater version: '2.4.0.0'");
+
+        try
+        {
+            var entries = parser.ParseFile(fullPath).ToList();
+
+            entries.Should().HaveCount(1);
+            entries[0].Timestamp.Should().BeCloseTo(baseDate.Add(new TimeSpan(0, 16, 34, 18, 371)), TimeSpan.FromMilliseconds(5));
+            entries[0].Message.Should().Be("Current Updater version: '2.4.0.0'");
+            entries[0].Level.Should().Be("INFO");
+        }
+        finally
+        {
+            File.Delete(fullPath);
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ParseLine_WithTimeOnlyFormat_DetectedErrorLevel()
     {
         var logger = new Mock<ILogger>();
         var parser = new UpdateLogParser(logger.Object);
 
-        var entry = parser.ParseLine("Some other line");
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, "16:34:18.3717 Error: Connection failed");
 
-        entry.Should().BeNull();
+        try
+        {
+            var entries = parser.ParseFile(tempFile).ToList();
+
+            entries.Should().HaveCount(1);
+            entries[0].Level.Should().Be("ERROR");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
     }
 }
