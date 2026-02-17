@@ -13,23 +13,6 @@ public class IISLogParser(IAppLogger logger) : BaseLogParser(logger)
 
     private string[]? _headers;
 
-    protected override LogEntry? ParseLineCore(string line) {
-        if (string.IsNullOrWhiteSpace(line))
-            return null;
-
-        if (line.StartsWith("#")) {
-            if (line.StartsWith("#Fields:")) {
-                _headers = line.Substring(8).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            }
-            return null;
-        }
-
-        if (_headers == null)
-            return null;
-
-        return ParseIisLine(line, _headers);
-    }
-
     private LogEntry? ParseIisLine(string line, string[] headers) {
         var fields = SplitLine(line);
         if (fields.Length != headers.Length) {
@@ -68,13 +51,44 @@ public class IISLogParser(IAppLogger logger) : BaseLogParser(logger)
             entry = entry with { Timestamp = d };
         }
         
-        // Populate standard Message if possible, e.g. URI
-        if (entry.Fields.TryGetValue("cs-uri-stem", out var uri))
-        {
-            entry = entry with { Message = uri };
+        // Compute Level from Status Code
+        if (entry.Fields.TryGetValue("sc-status", out var statusCode)) {
+            entry = entry with { Level = GetLevelFromStatusCode(statusCode) };
         }
 
         return entry;
+    }
+
+    private static string GetLevelFromStatusCode(string statusCode) {
+        if (int.TryParse(statusCode, out int code)) {
+            if (code >= 100 && code < 400) {
+                return LogLevel.Info;
+            }
+            if (code >= 400 && code < 500) {
+                return LogLevel.Warn;
+            }
+            if (code >= 500 && code < 600) {
+                return LogLevel.Error;
+            }
+        }
+        return LogLevel.Info; // Default to Info if parsing fails or code is outside expected ranges
+    }
+
+    protected override LogEntry? ParseLineCore(string line) {
+        if (string.IsNullOrWhiteSpace(line))
+            return null;
+
+        if (line.StartsWith("#")) {
+            if (line.StartsWith("#Fields:")) {
+                _headers = line.Substring(8).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            }
+            return null;
+        }
+
+        if (_headers == null)
+            return null;
+
+        return ParseIisLine(line, _headers);
     }
 
     public override IReadOnlyList<LogColumn> GetColumns() {
