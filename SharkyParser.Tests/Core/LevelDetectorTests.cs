@@ -62,6 +62,8 @@ public class LevelDetectorTests
     [Theory]
     [InlineData("0 error(s) found")]
     [InlineData("no error found")]
+    [InlineData("(18/126) Processing step 'ResetError.sql'")]
+    [InlineData("Step 'Resetrror.sql' result: 'successful'")]
     public void Detect_WithFalsePositive_ReturnsInfo(string line)
     {
         LevelDetector.Detect(line).Should().Be(LogLevel.Info);

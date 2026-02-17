@@ -11,13 +11,13 @@
       <ToolCommandName>sharky</ToolCommandName>
       <PackageId>SharkyParser</PackageId>
       <PackageOutputPath>./nupkg</PackageOutputPath>
-      <Version>1.2.0</Version>
+      <Version>2.0.0</Version>
         
       <!-- NuGet Metadata -->
-      <Authors>BlessedDays</Authors>
+      <Authors>sharkello</Authors>
       <Description>A fast and flexible log parser and analyzer CLI tool.</Description>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <RepositoryUrl>https://github.com/BlessedDayss/SharkyParser</RepositoryUrl>
+      <RepositoryUrl>https://github.com/sharkello/SharkyParser</RepositoryUrl>
       <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 

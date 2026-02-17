@@ -27,7 +27,7 @@ public static partial class LevelDetector
     [GeneratedRegex(@"\b(trace)\b", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
     private static partial Regex TraceMarkerRegex();
 
-    [GeneratedRegex(@"(?:0\s+(?:error|warning)|no\s+error)", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
+    [GeneratedRegex(@"(?:0\s+(?:error|warning)|no\s+error|.*\.sql)", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: RegexTimeoutMs)]
     private static partial Regex FalsePositiveRegex();
 
     public static string Detect(string fullLine)

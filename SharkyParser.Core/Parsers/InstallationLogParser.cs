@@ -24,13 +24,11 @@ public class InstallationLogParser : BaseLogParser, IConfigurableParser
 
     public InstallationLogParser(ILogger logger) : base(logger) { }
 
-    // ── IConfigurableParser ──────────────────────────────────────────────────
 
     public void Configure(StackTraceMode mode) => StackTraceMode = mode;
 
     public string GetConfigurationSummary() => $"Stack Trace Mode: {StackTraceMode}";
 
-    // ── Parsing ──────────────────────────────────────────────────────────────
 
     public override IEnumerable<LogEntry> ParseFile(string path)
     {
@@ -100,7 +98,6 @@ public class InstallationLogParser : BaseLogParser, IConfigurableParser
         };
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private DateTime? ExtractDateFromFileName(string path)
     {

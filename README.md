@@ -1,153 +1,80 @@
-# Sharky Parser PRO
+# 🦈 Sharky Parser PRO
+
+**Sharky Parser PRO** is a high-performance log analysis ecosystem designed for modern developers and DevOps teams. It delivers a seamless experience through a cross-platform CLI, a robust .NET 8 API, and a premium Angular-based Log Explorer.
 
 [![Release](https://img.shields.io/github/v/release/BlessedDayss/SharkyParser?style=flat-square&color=3399ff)](https://github.com/BlessedDayss/SharkyParser/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Sharky Parser PRO** is a high-performance log analysis system for developers and DevOps. It combines .NET 8 API, Angular web client, and CLI.
-
 ---
 
-## Tech Stack
-
-| Component | Technologies |
-|-----------|--------------|
-| Backend | .NET 8, ASP.NET Core |
-| Frontend | Angular 19, TypeScript |
-| CLI | .NET 8, Spectre.Console |
-| Core | .NET 8, shared parsing logic |
-
----
-
-## Project Structure
-
-```
-SharkyParserDev/
-├── SharkyParser.Core/     # Core: parsers, models, analyzers
-├── SharkyParser.Api/      # REST API (http://localhost:5000)
-├── SharkyParser.Web/      # Angular SPA (http://localhost:4200)
-├── SharkyParser.Cli/      # Console utility
-├── SharkyParser.Tests/    # Tests
-├── Changelog.md           # Changelog
-└── README.md
-```
-
----
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Node.js 18+](https://nodejs.org/)
+- [Docker](https://www.docker.com/) (Optional for DB/Full Stack)
 
-### 1. API (backend)
-
-```bash
-cd SharkyParser.Api
-dotnet run
-```
-
-API runs at **http://localhost:5000**.
-
-### 2. Web (frontend)
-
-```bash
-cd SharkyParser.Web
-npm install
-npm start
-```
-
-App runs at **http://localhost:4200**. Proxy forwards `/api/*` to the API.
-
-### 3. CLI (optional)
-
-```bash
-cd SharkyParser.Cli
-dotnet run -- parse path/to/log.txt --type Installation
-```
-
----
-
-## Quick Start (both services)
-
-```bash
-# Terminal 1 — API
-cd SharkyParser.Api && dotnet run
-
-# Terminal 2 — Web
-cd SharkyParser.Web && npm install && npm start
-```
-
-Open **http://localhost:4200** in your browser.
-
----
-
-## Docker & PostgreSQL
-
-The application supports full containerization with **PostgreSQL** for persistent file storage.
-
-### Quick Start with Docker
-
+### 1-Minute Setup (Docker)
 ```bash
 docker compose up --build
 ```
-
 - **Web UI**: [http://localhost:8080](http://localhost:8080)
 - **API**: [http://localhost:5000](http://localhost:5000)
-- **PostgreSQL**: `localhost:5432`
 
-### Database Configuration
+### Manual Setup
 
-Managed via `docker-compose.yml`:
+#### Backend (API & Core)
+```bash
+cd SharkyParser.Api && dotnet run
+```
 
-| Variable | Default Value |
-|----------|---------------|
-| `POSTGRES_DB` | `sharky_db` |
-| `POSTGRES_USER` | `sharky_user` |
-| `POSTGRES_PASSWORD` | `sharky_password` |
-| `Connection String` | `Host=db;Database=sharky_db;Username=sharky_user;Password=sharky_password` |
+#### Frontend (Angular)
+```bash
+cd SharkyParser.Web && npm install && npm start
+```
 
-The API automatically applies migrations and ensures the database is created on startup.
-
----
-
-
-## Features
-
-### Web UI
-
-- **Log Explorer** — upload logs, search, filter by level (INFO, ERROR, WARN, DEBUG)
-- **Analytics** — charts for log volume and sources
-- **Changelog** — release history in Markdown format
-- **Settings** — app configuration
-- **Dark theme** — glassmorphism, neon accents, custom scrollbar
-
-### API
-
-- `POST /api/logs/parse` — parse uploaded file
-- `GET /api/logs/health` — health check
-- `GET /api/changelog` — changelog text
-
-### Supported Log Types
-
-- Installation Logs
-- Update Logs
-- IIS Logs
-- RabbitMQ (coming soon)
+#### CLI Utility
+```bash
+dotnet run --project SharkyParser.Cli/SharkyParser.Cli.csproj -- parse <path_to_log> -t <Installation|Update|IIS>
+```
 
 ---
 
-## Architecture
+## ✨ Features
 
-- **SharkyParser.Core** — parsers, models, analyzers
-- **SharkyParser.Api** — REST API, accepts files, returns parsed entries and statistics
-- **SharkyParser.Web** — Angular SPA with proxy to API
-- **SharkyParser.Cli** — `sharky parse` for terminal
+- **Multi-Format Parsing**: Support for Installation, Update, and IIS logs with intelligent detection.
+- **Advanced Level Detection**: Automatic severity classification (INFO, WARN, ERROR) using regex-based heuristics.
+- **Log Explorer (Web)**: Premium Angular UI with glassmorphism, real-time filtering, and visual analytics.
+- **SQL Filtering**: Execute complex queries against your parsed logs directly in the UI.
+- **Containerized Architecture**: Full Docker support with PostgreSQL for persistent storage.
 
 ---
 
-## License
+## 🏗 Architecture
 
-MIT License. See `LICENSE`.
+- **SharkyParser.Core**: The engine. Contains stateless parsing logic and shared models.
+- **SharkyParser.Api**: RESTful service for file management and distributed parsing.
+- **SharkyParser.Web**: Modern SPA built with Angular 19 and custom design tokens.
+- **SharkyParser.Cli**: Powerful Spectre.Console-based terminal companion.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Logic** | .NET 8 (C#) |
+| **UI** | Angular 19, Vanilla CSS |
+| **Data** | PostgreSQL / EF Core |
+| **Terminal** | Spectre.Console |
+| **DevOps** | Docker, GitHub Actions |
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See `LICENSE` for more information.
+
+---
 
 **Sharky Parser** — *Bite through your logs with style.*
