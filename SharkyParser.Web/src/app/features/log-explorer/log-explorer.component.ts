@@ -1,10 +1,11 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { LogService } from '../../core/services/log.service';
 import { FileSelectionService } from '../../core/services/file-selection.service';
 import { LogDataService } from '../../core/services/log-data.service';
+import { SqlFilterService } from '../../core/services/sql-filter.service';
 import { LogEntry } from '../../core/models/log-entry';
 import { LogStatistics, LogColumn } from '../../core/models/parse-result';
 import { switchMap, take } from 'rxjs/operators';
@@ -17,10 +18,11 @@ import { of } from 'rxjs';
   templateUrl: './log-explorer.component.html',
   styleUrl: './log-explorer.component.scss'
 })
-export class LogExplorerComponent implements OnInit {
+export class LogExplorerComponent implements OnInit, OnDestroy {
   private readonly logService = inject(LogService);
   private readonly fileSelection = inject(FileSelectionService);
   private readonly logData = inject(LogDataService);
+  private readonly sqlFilter = inject(SqlFilterService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -29,6 +31,10 @@ export class LogExplorerComponent implements OnInit {
   statistics = signal<LogStatistics | null>(this.logData.statistics() || null);
   searchTerm = signal('');
   levelFilter = signal('ALL');
+  sqlQuery = signal('');
+  sqlPendingQuery = signal('');
+  sqlError = signal<string | null>(null);
+  showSqlBar = signal(false);
   selectedLogType = signal('Installation');
   loading = signal(false);
   error = signal<string | null>(null);
@@ -40,13 +46,21 @@ export class LogExplorerComponent implements OnInit {
 
   timeFilter = signal<string | null>(null);
 
+  // ── Infinite scroll ──────────────────────────────────────────
+  private readonly PAGE_SIZE = 100;
+  displayLimit = signal(100);
+
   filteredEntries = computed(() => {
     const e = this.entries();
     const search = this.searchTerm().toLowerCase();
     const level = this.levelFilter();
     const time = this.timeFilter();
+    const sql = this.sqlQuery().trim();
 
-    return e.filter((entry) => {
+    // Pre-apply SQL filter first (most selective)
+    const sqlFiltered = sql ? this.sqlFilter.filter(e, sql) : e;
+
+    return sqlFiltered.filter((entry) => {
       const matchesSearch = !search || entry.message.toLowerCase().includes(search);
       const matchesLevel = level === 'ALL' || entry.level.toUpperCase() === level.toUpperCase();
 
@@ -61,6 +75,19 @@ export class LogExplorerComponent implements OnInit {
 
       return matchesSearch && matchesLevel && matchesTime;
     });
+  });
+
+  visibleEntries = computed(() => this.filteredEntries().slice(0, this.displayLimit()));
+  hasMore = computed(() => this.displayLimit() < this.filteredEntries().length);
+
+  private filterResetWatcher = effect(() => {
+    // Access reactive dependencies so this effect re-runs on change
+    this.searchTerm();
+    this.levelFilter();
+    this.sqlQuery();
+    this.timeFilter();
+    // Reset scroll page when any filter changes
+    this.displayLimit.set(this.PAGE_SIZE);
   });
 
   private fileWatcher = effect(() => {
@@ -87,6 +114,10 @@ export class LogExplorerComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    // cleanup if needed
+  }
+
   private loadLatestFromDb() {
     const knownId = this.logData.fileId();
 
@@ -94,15 +125,15 @@ export class LogExplorerComponent implements OnInit {
     const source$ = knownId
       ? this.logService.getEntries(knownId)
       : this.logService.getHistory().pipe(
-          take(1),
-          switchMap(history => {
-            if (history.length === 0) return of(null);
-            const latest = history[0];
-            this.fileName.set(latest.fileName);
-            this.selectedLogType.set(latest.logType);
-            return this.logService.getEntries(latest.id);
-          })
-        );
+        take(1),
+        switchMap(history => {
+          if (history.length === 0) return of(null);
+          const latest = history[0];
+          this.fileName.set(latest.fileName);
+          this.selectedLogType.set(latest.logType);
+          return this.logService.getEntries(latest.id);
+        })
+      );
 
     this.loading.set(true);
     this.error.set(null);
@@ -167,6 +198,56 @@ export class LogExplorerComponent implements OnInit {
 
   setLevelFilter(level: string) {
     this.levelFilter.set(level);
+  }
+
+  onSqlInput(value: string) {
+    this.sqlPendingQuery.set(value);
+    if (!value.trim()) {
+      this.sqlQuery.set('');
+      this.sqlError.set(null);
+    }
+    // Don't validate on every keystroke — errors only appear on Run / Enter
+  }
+
+  runSql() {
+    const value = this.sqlPendingQuery().trim();
+    if (!value) {
+      this.sqlQuery.set('');
+      this.sqlError.set(null);
+      return;
+    }
+    const result = this.sqlFilter.validate(value);
+    if (result.ok) {
+      this.sqlQuery.set(value);
+      this.sqlError.set(null);
+    } else {
+      this.sqlError.set(result.error ?? 'Invalid query');
+    }
+  }
+
+  onSqlKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.runSql();
+    }
+  }
+
+  onTableScroll(event: Event) {
+    const el = event.target as HTMLElement;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    if (nearBottom && this.hasMore()) {
+      this.displayLimit.update(v => v + this.PAGE_SIZE);
+    }
+  }
+
+  clearSql() {
+    this.sqlQuery.set('');
+    this.sqlPendingQuery.set('');
+    this.sqlError.set(null);
+  }
+
+  toggleSqlBar() {
+    this.showSqlBar.update(v => !v);
   }
 
   openModal(entry: LogEntry) {

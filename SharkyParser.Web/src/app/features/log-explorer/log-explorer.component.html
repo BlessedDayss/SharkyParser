@@ -2,7 +2,6 @@
   <header class="header-row">
     <div>
       <h2 class="title">Log Explorer</h2>
-      <p class="subtitle">Categorize and navigate through thousands of logs</p>
     </div>
     <div class="file-info font-mono">{{ fileName() }}</div>
   </header>
@@ -48,6 +47,18 @@
     <div class="viewer-header">
       <input type="text" class="search-bar" placeholder="Search logs/messages..." [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)" />
+      <button class="sql-toggle-btn" [class.active]="showSqlBar()" [class.has-query]="sqlQuery()"
+        (click)="toggleSqlBar()"
+        title="{{ showSqlBar() ? 'Hide SQL filter' : 'Open SQL filter (WHERE, AND, OR, LIKE...)' }}">
+        <svg class="toggle-icon" [class.open]="showSqlBar()" viewBox="0 0 16 16" fill="none">
+          <path d="M2 5l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        <span class="toggle-label">SQL</span>
+        @if (sqlQuery() && !sqlError()) {
+        <span class="toggle-dot"></span>
+        }
+      </button>
       <select class="level-select" [ngModel]="levelFilter()" (ngModelChange)="levelFilter.set($event)">
         <option value="ALL">All Levels</option>
         <option value="ERROR">Errors</option>
@@ -56,7 +67,37 @@
         <option value="DEBUG">Debug</option>
       </select>
     </div>
-    <div class="table-wrapper">
+
+    <div class="sql-filter-bar" [class.visible]="showSqlBar()">
+      <div class="sql-panel">
+        <div class="sql-input-wrap" [class.has-error]="sqlError()">
+          <span class="sql-prefix">WHERE</span>
+          <input type="text" class="sql-input"
+            placeholder="Status = '500'   TimeTaken > 1000   ClientIP = '10.0.0.1' AND Status >= '400'   URI LIKE '%/api/%'"
+            [ngModel]="sqlPendingQuery()" (ngModelChange)="onSqlInput($event)" (keydown)="onSqlKeydown($event)"
+            spellcheck="false" autocomplete="off" />
+          @if (sqlPendingQuery()) {
+          <button class="sql-run" (click)="runSql()" title="Run query (Enter)">▶ Run</button>
+          <button class="sql-clear" (click)="clearSql()" title="Clear">✕</button>
+          }
+        </div>
+        <div class="sql-meta">
+          @if (sqlError()) {
+          <span class="sql-error">⚠ {{ sqlError() }}</span>
+          } @else if (sqlQuery()) {
+          <span class="sql-count">{{ filteredEntries().length }} / {{ entries().length }} rows</span>
+          } @else {
+          <span class="sql-hint">
+            Fields: <em>Status · SubStatus · Method · ClientIP · ServerIP · URI · Query · TimeTaken · UserAgent ·
+              Referer · Username · Level · Timestamp</em>
+            &nbsp;·&nbsp; Ops: <em>= &nbsp;!= &nbsp;&gt; &nbsp;&gt;= &nbsp;LIKE &nbsp;AND &nbsp;OR &nbsp;NOT &nbsp;(
+              )</em>
+          </span>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="table-wrapper" (scroll)="onTableScroll($event)">
       <table class="log-table">
         <thead>
           <tr>
@@ -68,7 +109,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (entry of filteredEntries().slice(0, 10000); track entry.id) {
+          @for (entry of visibleEntries(); track entry.id) {
           <tr class="log-row" (click)="openModal(entry)" (keydown.enter)="openModal(entry)" tabindex="0">
             @for (col of columns(); track col.name) {
             <td>
@@ -85,6 +126,12 @@
           }
         </tbody>
       </table>
+      @if (hasMore()) {
+      <div class="load-more-indicator">
+        <span class="load-more-spinner"></span>
+        Scroll for more… ({{ visibleEntries().length }} / {{ filteredEntries().length }})
+      </div>
+      }
     </div>
   </div>
   }
