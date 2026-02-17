@@ -11,4 +11,3 @@ publish/
 *.suo
 .DS_Store
 Logs/
-.github/workflows
