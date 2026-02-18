@@ -50,6 +50,7 @@ public partial class UpdateLogParser : BaseLogParser
 
         if (match.Groups["component"].Success)
         {
+            var component = match.Groups["component"].Value;
             var action = match.Groups["action"].Value;
             var status = match.Groups["status"].Value;
             var target = match.Groups["target"].Value;
@@ -59,7 +60,8 @@ public partial class UpdateLogParser : BaseLogParser
                 Timestamp = timestamp,
                 Level = GetUpdateLevel(action, status),
                 Message = $"{action} {target}: {status}",
-                RawData = line
+                RawData = line,
+                Fields = new Dictionary<string, string> { ["Component"] = component }
             };
         }
         else
