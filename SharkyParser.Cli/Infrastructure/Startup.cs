@@ -21,6 +21,7 @@ public static class Startup
         config.AddCommand<AnalyzeCommand>("analyze")
             .WithDescription("Analyze log file and show statistics (errors, warnings, etc.)")
             .WithExample(["analyze", "path/to/log.log", "-t", "installation"])
-            .WithExample(["analyze", "path/to/log.log", "-t", "iis"]);
+            .WithExample(["analyze", "path/to/log.log", "-t", "iis"])
+            .WithExample(["analyze", "path/to/log.log", "-t", "teamcity"]);
     }
 }

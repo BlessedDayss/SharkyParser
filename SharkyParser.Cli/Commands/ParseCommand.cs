@@ -17,7 +17,7 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         public string Path { get; set; } = string.Empty;
 
         [CommandOption("-t|--type")]
-        [Description("Log type: installation, update, rabbitmq, iis")]
+        [Description("Log type: installation, update, rabbitmq, iis, teamcity")]
         public string? LogTypeString { get; set; }
 
         [CommandOption("--embedded")]
@@ -133,6 +133,7 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         AnsiConsole.MarkupLine("  [green]update[/]        - Update logs");
         AnsiConsole.MarkupLine("  [green]rabbitmq[/]      - RabbitMQ logs");
         AnsiConsole.MarkupLine("  [green]iis[/]           - IIS server logs");
+        AnsiConsole.MarkupLine("  [green]teamcity[/]      - TeamCity build logs");
         AnsiConsole.WriteLine();
     }
 }

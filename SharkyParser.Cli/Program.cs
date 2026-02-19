@@ -47,6 +47,7 @@ public static class Program
         services.AddTransient<InstallationLogParser>();
         services.AddSingleton<UpdateLogParser>();
         services.AddSingleton<IISLogParser>();
+        services.AddSingleton<TeamCityLogParser>();
 
         // ── Core services ──────────────────────────────────────────────────────
         // ILogParserRegistry is registered as a factory so that EVERY ServiceProvider
@@ -60,6 +61,7 @@ public static class Program
             registry.Register(LogType.Installation, () => sp.GetRequiredService<InstallationLogParser>());
             registry.Register(LogType.Update,        () => sp.GetRequiredService<UpdateLogParser>());
             registry.Register(LogType.IIS,           () => sp.GetRequiredService<IISLogParser>());
+            registry.Register(LogType.TeamCity,      () => sp.GetRequiredService<TeamCityLogParser>());
             return registry;
         });
 
