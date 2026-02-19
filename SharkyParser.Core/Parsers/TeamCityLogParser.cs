@@ -1,4 +1,4 @@
-    using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
@@ -7,7 +7,7 @@ using SharkyParser.Core.Models;
 namespace SharkyParser.Core.Parsers;
 
 /// <summary>
-/// Parses TeamCity build logs — both plain timestamped lines and
+/// Parses TeamCity build logs - both plain timestamped lines and
 /// <c>##teamcity[...]</c> service messages.
 ///
 /// Supported formats:
@@ -22,13 +22,11 @@ namespace SharkyParser.Core.Parsers;
 ///   ##teamcity[testFailed name='...' message='...' details='...']
 ///   ##teamcity[buildStatus status='FAILURE' text='...']
 /// </summary>
-public partial class TeamCityLogParser : BaseLogParser
+public partial class TeamCityLogParser : BaseLogParser, ITeamCityBlockConfigurableParser
 {
     public override LogType SupportedLogType => LogType.TeamCity;
     public override string ParserName => "TeamCity Logs";
     public override string ParserDescription => "Parses TeamCity CI/CD build logs";
-
-    // ── Regex patterns ────────────────────────────────────────────────────
 
     // [HH:mm:ss]  or  [yyyy-MM-dd HH:mm:ss]  with optional level marker (W:/E:/i:) or " : " separator
     [GeneratedRegex(
@@ -48,30 +46,51 @@ public partial class TeamCityLogParser : BaseLogParser
         RegexOptions.Compiled)]
     private static partial Regex AttributeRegex();
 
+    // Extracts TeamCity line tail for block-scope filtering.
+    [GeneratedRegex(
+        @"^\[(?<timestamp>\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\](?:(?<marker>[WEi]):)?(?<tail>.*)$",
+        RegexOptions.Compiled)]
+    private static partial Regex ContextLineRegex();
+
     private DateTime _baseDate = DateTime.Now.Date;
+    private HashSet<string> _selectedBlocks = new(StringComparer.OrdinalIgnoreCase);
 
     public TeamCityLogParser(ILogger logger) : base(logger) { }
 
-    // ── File-level override to capture base date ──────────────────────────
+    public void ConfigureBlocks(IEnumerable<string>? blocks)
+    {
+        _selectedBlocks = blocks?
+            .Where(static b => !string.IsNullOrWhiteSpace(b))
+            .Select(static b => b.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    // File-level override to capture base date
     public override IEnumerable<LogEntry> ParseFile(string path)
     {
         _baseDate = File.GetLastWriteTime(path).Date;
-        return base.ParseFile(path);
+
+        if (_selectedBlocks.Count == 0)
+            return base.ParseFile(path);
+
+        return ParseFileWithSelectedBlocks(path);
     }
 
     protected override LogEntry? ParseLineCore(string line)
     {
-        // ── Service messages: ##teamcity[...] ─────────────────────────────
+        // Service messages: ##teamcity[...]
         var svcMatch = ServiceMessageRegex().Match(line);
         if (svcMatch.Success)
             return ParseServiceMessage(svcMatch, line);
 
-        // ── Timestamped lines: [HH:mm:ss] ... ────────────────────────────
+        // Timestamped lines: [HH:mm:ss] ...
         var tsMatch = TimestampedLineRegex().Match(line);
         if (tsMatch.Success)
             return ParseTimestampedLine(tsMatch, line);
 
-        // ── Plain text (continuation / unstructured) ──────────────────────
+        // Plain text (continuation / unstructured)
         if (!string.IsNullOrWhiteSpace(line))
         {
             return new LogEntry
@@ -86,8 +105,6 @@ public partial class TeamCityLogParser : BaseLogParser
         return null;
     }
 
-    // ── Timestamped line parsing ──────────────────────────────────────────
-
     private LogEntry ParseTimestampedLine(Match match, string rawLine)
     {
         var timestamp = ParseTimestamp(match.Groups["timestamp"].Value);
@@ -100,7 +117,7 @@ public partial class TeamCityLogParser : BaseLogParser
             "E" => LogLevel.Error,
             "W" => LogLevel.Warn,
             "i" => LogLevel.Info,
-            _   => LevelDetector.Detect(message)
+            _ => LevelDetector.Detect(message)
         };
 
         var fields = new Dictionary<string, string>();
@@ -118,8 +135,6 @@ public partial class TeamCityLogParser : BaseLogParser
         };
     }
 
-    // ── Service message parsing ───────────────────────────────────────────
-
     private LogEntry ParseServiceMessage(Match match, string rawLine)
     {
         var name = match.Groups["name"].Value;
@@ -129,7 +144,6 @@ public partial class TeamCityLogParser : BaseLogParser
         foreach (Match m in AttributeRegex().Matches(attrsRaw))
             attrs[m.Groups["key"].Value] = Unescape(m.Groups["value"].Value);
 
-        // Extract timestamp from service message if present
         var timestamp = attrs.TryGetValue("timestamp", out var ts)
             ? ParseServiceTimestamp(ts)
             : DateTime.Now;
@@ -168,27 +182,25 @@ public partial class TeamCityLogParser : BaseLogParser
 
     private static string DetermineServiceMessageLevel(string name, Dictionary<string, string> attrs)
     {
-        // Explicit status attribute
         if (attrs.TryGetValue("status", out var status))
         {
             return status.ToUpperInvariant() switch
             {
                 "ERROR" or "FAILURE" => LogLevel.Error,
-                "WARNING"           => LogLevel.Warn,
-                _                   => LogLevel.Info
+                "WARNING" => LogLevel.Warn,
+                _ => LogLevel.Info
             };
         }
 
-        // Level by message type
         return name.ToLowerInvariant() switch
         {
             "testfailed" or "buildproblem" or "buildfailure" => LogLevel.Error,
-            "testignored"                                     => LogLevel.Warn,
-            "teststarted" or "testfinished" or "teststdout"   => LogLevel.Debug,
-            "compilationstarted" or "compilationfinished"     => LogLevel.Info,
-            "progressstart" or "progressfinish"               => LogLevel.Info,
-            "blockopened" or "blockclosed"                     => LogLevel.Debug,
-            _                                                 => LogLevel.Info
+            "testignored" => LogLevel.Warn,
+            "teststarted" or "testfinished" or "teststdout" => LogLevel.Debug,
+            "compilationstarted" or "compilationfinished" => LogLevel.Info,
+            "progressstart" or "progressfinish" => LogLevel.Info,
+            "blockopened" or "blockclosed" => LogLevel.Debug,
+            _ => LogLevel.Info
         };
     }
 
@@ -196,34 +208,28 @@ public partial class TeamCityLogParser : BaseLogParser
     {
         return name.ToLowerInvariant() switch
         {
-            "message"      => attrs.GetValueOrDefault("text", name),
-            "buildproblem"  => $"Build Problem: {attrs.GetValueOrDefault("description", "unknown")}",
-            "buildstatus"   => $"Build Status: {attrs.GetValueOrDefault("text", attrs.GetValueOrDefault("status", "unknown"))}",
-            "teststarted"   => $"Test Started: {attrs.GetValueOrDefault("name", "?")}",
-            "testfinished"  => $"Test Finished: {attrs.GetValueOrDefault("name", "?")}",
-            "testfailed"    => $"Test Failed: {attrs.GetValueOrDefault("name", "?")} — {attrs.GetValueOrDefault("message", "")}",
-            "testignored"   => $"Test Ignored: {attrs.GetValueOrDefault("name", "?")} — {attrs.GetValueOrDefault("message", "")}",
-            "blockopened"   => $"▶ {attrs.GetValueOrDefault("name", "")}",
-            "blockclosed"   => $"◀ {attrs.GetValueOrDefault("name", "")}",
+            "message" => attrs.GetValueOrDefault("text", name),
+            "buildproblem" => $"Build Problem: {attrs.GetValueOrDefault("description", "unknown")}",
+            "buildstatus" => $"Build Status: {attrs.GetValueOrDefault("text", attrs.GetValueOrDefault("status", "unknown"))}",
+            "teststarted" => $"Test Started: {attrs.GetValueOrDefault("name", "?")}",
+            "testfinished" => $"Test Finished: {attrs.GetValueOrDefault("name", "?")}",
+            "testfailed" => $"Test Failed: {attrs.GetValueOrDefault("name", "?")} - {attrs.GetValueOrDefault("message", "")}",
+            "testignored" => $"Test Ignored: {attrs.GetValueOrDefault("name", "?")} - {attrs.GetValueOrDefault("message", "")}",
+            "blockopened" => $"> {attrs.GetValueOrDefault("name", "")}",
+            "blockclosed" => $"< {attrs.GetValueOrDefault("name", "")}",
             "progressstart" => $"Progress: {attrs.GetValueOrDefault("message", "")}",
-            "progressfinish"=> $"Progress Done: {attrs.GetValueOrDefault("message", "")}",
-            "compilationstarted"  => $"Compilation: {attrs.GetValueOrDefault("compiler", "")}",
+            "progressfinish" => $"Progress Done: {attrs.GetValueOrDefault("message", "")}",
+            "compilationstarted" => $"Compilation: {attrs.GetValueOrDefault("compiler", "")}",
             "compilationfinished" => $"Compilation Done: {attrs.GetValueOrDefault("compiler", "")}",
             _ => $"{name}: {string.Join(", ", attrs.Select(kv => $"{kv.Key}={kv.Value}"))}"
         };
     }
 
-    // ── Timestamp helpers ─────────────────────────────────────────────────
-
     private DateTime ParseTimestamp(string ts)
     {
-        // Full datetime: 2024-01-15 10:30:45
         if (DateTime.TryParse(ts, CultureInfo.InvariantCulture, DateTimeStyles.None, out var full))
-        {
             return ts.Length > 10 ? full : _baseDate.Add(full.TimeOfDay);
-        }
 
-        // Time-only: 10:30:45
         if (TimeSpan.TryParse(ts, out var time))
             return _baseDate.Add(time);
 
@@ -232,14 +238,13 @@ public partial class TeamCityLogParser : BaseLogParser
 
     private static DateTime ParseServiceTimestamp(string ts)
     {
-        // TeamCity format: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-        var formats = new[]
-        {
+        string[] formats =
+        [
             "yyyy-MM-dd'T'HH:mm:ss.fffzzz",
             "yyyy-MM-dd'T'HH:mm:ss.fff",
             "yyyy-MM-dd'T'HH:mm:sszzz",
             "yyyy-MM-dd'T'HH:mm:ss"
-        };
+        ];
 
         return DateTime.TryParseExact(ts, formats,
             CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
@@ -259,8 +264,6 @@ public partial class TeamCityLogParser : BaseLogParser
             .Replace("''", "'");
     }
 
-    // ── Column definitions ────────────────────────────────────────────────
-
     public override IReadOnlyList<LogColumn> GetColumns()
     {
         return new List<LogColumn>
@@ -273,4 +276,173 @@ public partial class TeamCityLogParser : BaseLogParser
             new("TestName", "Test", "Test name (for test messages).", false)
         };
     }
+
+    private IEnumerable<LogEntry> ParseFileWithSelectedBlocks(string path)
+    {
+        var lineNumber = 0;
+        var blockPath = new List<string>();
+        var insideSelectedBlock = false;
+
+        foreach (var line in File.ReadLines(path))
+        {
+            lineNumber++;
+
+            var includeLine = ShouldIncludeLine(line, blockPath, ref insideSelectedBlock);
+            if (!includeLine)
+                continue;
+
+            var entry = ParseLine(line);
+            if (entry == null)
+                continue;
+
+            yield return entry with
+            {
+                FilePath = path,
+                LineNumber = lineNumber
+            };
+        }
+    }
+
+    private bool ShouldIncludeLine(string line, List<string> blockPath, ref bool insideSelectedBlock)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+            return insideSelectedBlock;
+
+        if (!TryParseContextLine(line, out var context))
+            return insideSelectedBlock;
+
+        if (!string.IsNullOrWhiteSpace(context.Bracket))
+        {
+            SetPathAtDepth(blockPath, context.Depth, context.Bracket!);
+        }
+        else if (context.Depth <= 0)
+        {
+            blockPath.Clear();
+        }
+        else
+        {
+            TrimPathToDepth(blockPath, context.Depth);
+        }
+
+        var matchedBoundary = TryMatchSelectedBoundary(context.Message, out var boundaryName);
+        if (matchedBoundary)
+            SetPathAtDepth(blockPath, context.Depth + 1, boundaryName!);
+
+        var pathMatched = blockPath.Any(_selectedBlocks.Contains);
+        insideSelectedBlock = pathMatched || matchedBoundary;
+
+        return insideSelectedBlock;
+    }
+
+    private bool TryParseContextLine(string line, out TeamCityContextLine context)
+    {
+        context = default;
+
+        var match = ContextLineRegex().Match(line);
+        if (!match.Success)
+            return false;
+
+        var tail = match.Groups["tail"].Value;
+        var index = 0;
+
+        while (index < tail.Length && tail[index] == ' ')
+            index++;
+
+        if (index < tail.Length && tail[index] == ':')
+            index++;
+
+        var depth = 0;
+        while (index < tail.Length)
+        {
+            if (tail[index] == '\t')
+            {
+                depth++;
+                index++;
+                continue;
+            }
+
+            if (tail[index] == ' ')
+            {
+                index++;
+                continue;
+            }
+
+            break;
+        }
+
+        string? bracket = null;
+        if (index < tail.Length && tail[index] == '[')
+        {
+            var closing = tail.IndexOf(']', index + 1);
+            if (closing > index)
+            {
+                bracket = tail.Substring(index + 1, closing - index - 1).Trim();
+                index = closing + 1;
+            }
+        }
+
+        var message = index < tail.Length
+            ? tail[index..].Trim()
+            : string.Empty;
+
+        context = new TeamCityContextLine(depth, bracket, message);
+        return true;
+    }
+
+    private bool TryMatchSelectedBoundary(string message, out string? blockName)
+    {
+        blockName = null;
+        if (string.IsNullOrWhiteSpace(message))
+            return false;
+
+        var colonIndex = message.IndexOf(':');
+        if (colonIndex > 0)
+        {
+            var candidate = message[..colonIndex].Trim();
+            if (_selectedBlocks.Contains(candidate))
+            {
+                blockName = candidate;
+                return true;
+            }
+        }
+
+        var durationSeparator = message.LastIndexOf(" (", StringComparison.Ordinal);
+        if (durationSeparator > 0 && message.EndsWith(")", StringComparison.Ordinal))
+        {
+            var candidate = message[..durationSeparator].Trim();
+            if (_selectedBlocks.Contains(candidate))
+            {
+                blockName = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void SetPathAtDepth(List<string> blockPath, int depth, string name)
+    {
+        if (depth < 0)
+            depth = 0;
+
+        if (blockPath.Count > depth)
+            blockPath.RemoveRange(depth, blockPath.Count - depth);
+
+        while (blockPath.Count < depth)
+            blockPath.Add(string.Empty);
+
+        if (blockPath.Count == depth)
+            blockPath.Add(name);
+        else
+            blockPath[depth] = name;
+    }
+
+    private static void TrimPathToDepth(List<string> blockPath, int depth)
+    {
+        var keep = Math.Max(0, depth);
+        if (blockPath.Count > keep)
+            blockPath.RemoveRange(keep, blockPath.Count - keep);
+    }
+
+    private readonly record struct TeamCityContextLine(int Depth, string? Bracket, string Message);
 }

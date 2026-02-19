@@ -247,6 +247,116 @@ public class TeamCityLogParserTests
     }
 
     [Fact]
+    public void ParseFile_WithSelectedBlocks_ReturnsOnlySelectedBlockAndChildren()
+    {
+        ((ITeamCityBlockConfigurableParser)_parser).ConfigureBlocks(["Test-BeforeUpdate"]);
+
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, new[]
+        {
+            "[10:00:00] :\t [Step 1/2] Test-BeforeUpdate: Before update app checks",
+            "[10:00:00] :\t [Step 1/2] Test-BeforeUpdate (3s)",
+            "[10:00:00] :\t\t [Test-BeforeUpdate] Test-SiteState: Compares parameters",
+            "[10:00:00] :\t\t [Test-BeforeUpdate] Test-SiteState",
+            "[10:00:00] :\t\t\t [Test-SiteState] Deep-Step: Details",
+            "[10:00:01] :\t [Step 1/2] Another-Block: Should be excluded",
+            "[10:00:01] :\t\t [Another-Block] Child: Excluded"
+        });
+
+        try
+        {
+            var entries = _parser.ParseFile(tempFile).ToList();
+
+            entries.Should().HaveCount(5);
+            entries.Select(e => e.LineNumber).Should().BeEquivalentTo(new[] { 1, 2, 3, 4, 5 });
+            entries.Should().NotContain(e => e.RawData.Contains("Another-Block", StringComparison.Ordinal));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ParseFile_WithSelectedBlocks_MatchesCaseInsensitively()
+    {
+        ((ITeamCityBlockConfigurableParser)_parser).ConfigureBlocks(["update-app"]);
+
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, new[]
+        {
+            "[10:10:00] :\t\t [Update-Site] Update-App: Updating application",
+            "[10:10:00] :\t\t\t [Update-App] Invoke-AppScenario: Running",
+            "[10:10:00] :\t\t\t\t [Invoke-AppScenario] Inner: Included",
+            "[10:10:01] :\t\t [Update-Site] Update-Db: Should be excluded"
+        });
+
+        try
+        {
+            var entries = _parser.ParseFile(tempFile).ToList();
+
+            entries.Should().HaveCount(3);
+            entries.Should().Contain(e => e.RawData.Contains("Update-App: Updating application", StringComparison.Ordinal));
+            entries.Should().Contain(e => e.RawData.Contains("[Update-App] Invoke-AppScenario", StringComparison.Ordinal));
+            entries.Should().Contain(e => e.RawData.Contains("[Invoke-AppScenario] Inner", StringComparison.Ordinal));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ParseFile_WithUnknownAndKnownBlocks_IgnoresUnknownAndReturnsKnownMatches()
+    {
+        ((ITeamCityBlockConfigurableParser)_parser).ConfigureBlocks(["Unknown-Block", "Update-App"]);
+
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, new[]
+        {
+            "[10:20:00] :\t\t [Update-Site] Update-App: Updating application",
+            "[10:20:00] :\t\t\t [Update-App] Child-Step: Included",
+            "[10:20:01] :\t [Step 1/2] NonSelected: Excluded"
+        });
+
+        try
+        {
+            var entries = _parser.ParseFile(tempFile).ToList();
+
+            entries.Should().HaveCount(2);
+            entries.Should().NotContain(e => e.RawData.Contains("NonSelected", StringComparison.Ordinal));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ParseFile_WithEmptyBlockConfiguration_ReturnsFullOutput()
+    {
+        ((ITeamCityBlockConfigurableParser)_parser).ConfigureBlocks(Array.Empty<string>());
+
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, new[]
+        {
+            "[10:30:00] Build started",
+            "[10:30:01]E: Failure",
+            "[10:30:02] :\t [Step 1/2] Any-Block: Message"
+        });
+
+        try
+        {
+            var entries = _parser.ParseFile(tempFile).ToList();
+            entries.Should().HaveCount(3);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
     public void GetColumns_ReturnsExpectedColumns()
     {
         var columns = _parser.GetColumns();

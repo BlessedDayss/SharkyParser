@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using SharkyParser.Cli.Formatters;
 using SharkyParser.Core.Enums;
 using SharkyParser.Core.Interfaces;
@@ -27,6 +28,10 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         [CommandOption("-f|--filter")]
         [Description("Filter by log level: error, warn, info, debug (shows only matching entries)")]
         public string? Filter { get; set; }
+
+        [CommandOption("--block")]
+        [Description("TeamCity block filter (repeatable): --block Test-BeforeUpdate --block Update-App")]
+        public string[]? Blocks { get; set; }
     }
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -59,7 +64,11 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         try
         {
             var parser = parserFactory.CreateParser(logType, stackTraceMode);
+            if (parser is ITeamCityBlockConfigurableParser teamCityConfigurable)
+                teamCityConfigurable.ConfigureBlocks(settings.Blocks);
+
             var allLogs = parser.ParseFile(settings.Path).ToList();
+            WriteAllLogsToTempFile(allLogs);
             var filteredLogs = ApplyFilter(allLogs, settings.Filter);
 
             IParseOutputFormatter formatter = settings.Embedded
@@ -106,6 +115,27 @@ public sealed class ParseCommand(ILogParserFactory parserFactory) : Command<Pars
         return mode == "All lines after timestamp go to stack trace"
             ? StackTraceMode.AllToStackTrace
             : StackTraceMode.NoStackTrace;
+    }
+
+    private static void WriteAllLogsToTempFile(IReadOnlyList<LogEntry> allLogs)
+    {
+        try
+        {
+            var tempPath = Path.Combine(
+                Path.GetTempPath(),
+                $"sharky_parse_allLogs_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.json");
+
+            var json = JsonSerializer.Serialize(allLogs, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            File.WriteAllText(tempPath, json);
+        }
+        catch
+        {
+            // Best-effort temp dump should not break parsing flow.
+        }
     }
 
     private static void PrintUsageError(bool embedded)

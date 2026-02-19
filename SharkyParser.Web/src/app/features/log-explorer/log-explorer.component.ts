@@ -43,8 +43,10 @@ export class LogExplorerComponent implements OnInit, OnDestroy {
   fileName = signal<string>('No file selected');
   showAiPrompt = signal(false);
   aiPromptDismissed = signal(false);
+  teamCityBlocksInput = signal('');
 
   timeFilter = signal<string | null>(null);
+  isTeamCity = computed(() => this.selectedLogType().toLowerCase() === 'teamcity');
 
   // ── Infinite scroll ──────────────────────────────────────────
   private readonly PAGE_SIZE = 100;
@@ -123,7 +125,7 @@ export class LogExplorerComponent implements OnInit, OnDestroy {
 
     // If we already know the ID of the file being viewed — use it directly.
     const source$ = knownId
-      ? this.logService.getEntries(knownId)
+      ? this.logService.getEntries(knownId, this.getTeamCityBlocksFor(this.selectedLogType()))
       : this.logService.getHistory().pipe(
         take(1),
         switchMap(history => {
@@ -131,7 +133,7 @@ export class LogExplorerComponent implements OnInit, OnDestroy {
           const latest = history[0];
           this.fileName.set(latest.fileName);
           this.selectedLogType.set(latest.logType);
-          return this.logService.getEntries(latest.id);
+          return this.logService.getEntries(latest.id, this.getTeamCityBlocksFor(latest.logType));
         })
       );
 
@@ -161,11 +163,13 @@ export class LogExplorerComponent implements OnInit, OnDestroy {
     this.parseFile(file, this.selectedLogType());
   }
 
-  parseFile(file: File, logType: string) {
+  parseFile(file: File, logType: string, blocks?: string[]) {
     this.fileName.set(file.name);
     this.loading.set(true);
     this.error.set(null);
-    this.logService.parse(file, logType).subscribe({
+    const effectiveBlocks = blocks ?? this.getTeamCityBlocksFor(logType);
+
+    this.logService.parse(file, logType, effectiveBlocks).subscribe({
       next: (result) => {
         console.log('Parse result:', result);
         console.log('Columns received:', result.columns);
@@ -180,6 +184,41 @@ export class LogExplorerComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Failed to parse log file');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  applyTeamCityBlocks() {
+    if (!this.isTeamCity()) return;
+
+    const blocks = this.getTeamCityBlocksFor('TeamCity');
+    const sourceFile = this.logData.sourceFile();
+    const fileId = this.logData.fileId();
+
+    if (sourceFile && sourceFile.name === this.fileName()) {
+      this.parseFile(sourceFile, this.selectedLogType(), blocks);
+      return;
+    }
+
+    if (!fileId) {
+      this.error.set('No source file available to apply TeamCity blocks.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.logService.getEntries(fileId, blocks).pipe(take(1)).subscribe({
+      next: result => {
+        this.entries.set(result.entries);
+        this.columns.set(result.columns);
+        this.statistics.set(result.statistics);
+        this.logData.setData(result.entries, result.columns, result.statistics, undefined, this.selectedLogType(), result.fileId);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load log entries with TeamCity block filter.');
         this.loading.set(false);
       }
     });
@@ -273,5 +312,18 @@ export class LogExplorerComponent implements OnInit, OnDestroy {
     const d = new Date(ts);
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  private getTeamCityBlocksFor(logType: string): string[] | undefined {
+    if (logType.toLowerCase() !== 'teamcity') return undefined;
+
+    const unique = new Set<string>();
+    for (const chunk of this.teamCityBlocksInput().split(/[,\r\n]+/)) {
+      const value = chunk.trim();
+      if (!value) continue;
+      unique.add(value);
+    }
+
+    return [...unique];
   }
 }

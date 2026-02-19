@@ -29,10 +29,13 @@ export class LogService {
     return this.http.get<LogType[]>('/api/logs/types');
   }
 
-  parse(file: File, logType: string): Observable<ParseResult> {
+  parse(file: File, logType: string, blocks?: string[]): Observable<ParseResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('logType', logType);
+    for (const block of blocks ?? []) {
+      formData.append('blocks', block);
+    }
 
     return this.http
       .post<ApiParseResult>('/api/logs/parse', formData)
@@ -43,9 +46,16 @@ export class LogService {
     return this.http.get<FileRecordDto[]>('/api/logs/history');
   }
 
-  getEntries(id: string): Observable<ParseResult> {
+  getEntries(id: string, blocks?: string[]): Observable<ParseResult> {
+    const params = new URLSearchParams();
+    for (const block of blocks ?? []) {
+      params.append('blocks', block);
+    }
+    const query = params.toString();
+    const url = query ? `/api/logs/${id}/entries?${query}` : `/api/logs/${id}/entries`;
+
     return this.http
-      .get<ApiParseResult>(`/api/logs/${id}/entries`)
+      .get<ApiParseResult>(url)
       .pipe(map(res => this.mapResult(res)));
   }
 

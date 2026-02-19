@@ -177,6 +177,35 @@ public class ParseCommandTests
         }
     }
 
+    [Fact]
+    public void Execute_WithTeamCityBlocks_ForwardsBlocksToParser()
+    {
+        var parser = new TeamCityConfigurableFakeParser();
+        var factory = new FakeLogParserFactory(parser);
+
+        var logPath = Path.Combine(Path.GetTempPath(), $"parse_teamcity_{Guid.NewGuid():N}.log");
+        File.WriteAllText(logPath, "content");
+
+        try
+        {
+            RunCommand(factory, new[]
+            {
+                "parse", logPath,
+                "--type", "teamcity",
+                "--embedded",
+                "--block", "Test-BeforeUpdate",
+                "--block", "Update-App"
+            }, out var exitCode);
+
+            exitCode.Should().Be(0);
+            parser.ConfiguredBlocks.Should().Equal("Test-BeforeUpdate", "Update-App");
+        }
+        finally
+        {
+            File.Delete(logPath);
+        }
+    }
+
     private static string RunCommand(ILogParserFactory factory, string[] args, out int exitCode)
     {
         var services = new ServiceCollection();
@@ -264,5 +293,40 @@ public class ParseCommandTests
         public ILogParser CreateParser(LogType logType, StackTraceMode stackTraceMode) => throw new InvalidOperationException("boom");
         public IEnumerable<LogType> GetAvailableTypes() => Array.Empty<LogType>();
         public ILogParser GetParserForType(LogType logType) => throw new InvalidOperationException("boom");
+    }
+
+    private sealed class TeamCityConfigurableFakeParser : ILogParser, ITeamCityBlockConfigurableParser
+    {
+        public IReadOnlyList<string> ConfiguredBlocks { get; private set; } = Array.Empty<string>();
+
+        public LogType SupportedLogType => LogType.TeamCity;
+        public string ParserName => "TeamCity Test Parser";
+        public string ParserDescription => "TeamCity test parser";
+
+        public void ConfigureBlocks(IEnumerable<string>? blocks)
+        {
+            ConfiguredBlocks = blocks?.ToArray() ?? Array.Empty<string>();
+        }
+
+        public LogEntry? ParseLine(string line) => null;
+
+        public IEnumerable<LogEntry> ParseFile(string path)
+            => new[]
+            {
+                new LogEntry
+                {
+                    Timestamp = DateTime.UtcNow,
+                    Level = "INFO",
+                    Message = "ok",
+                    FilePath = path,
+                    LineNumber = 1,
+                    RawData = "ok"
+                }
+            };
+
+        public Task<IEnumerable<LogEntry>> ParseFileAsync(string path)
+            => Task.FromResult(ParseFile(path));
+
+        public IReadOnlyList<LogColumn> GetColumns() => new List<LogColumn>();
     }
 }

@@ -35,6 +35,7 @@ public class LogsController : ControllerBase
     public async Task<IActionResult> Parse(
         [FromForm] IFormFile file,
         [FromForm] string logType = "Installation",
+        [FromForm] List<string>? blocks = null,
         CancellationToken ct = default)
     {
         if (file == null || file.Length == 0)
@@ -49,7 +50,7 @@ public class LogsController : ControllerBase
         try
         {
             await using var stream = file.OpenReadStream();
-            var result = await _parsingService.ParseFileAsync(stream, file.FileName, type, ct);
+            var result = await _parsingService.ParseFileAsync(stream, file.FileName, type, blocks, ct);
             return Ok(result);
         }
         catch (ArgumentException ex)
@@ -68,11 +69,14 @@ public class LogsController : ControllerBase
         => Ok(await _parsingService.GetRecentFilesAsync(20, ct));
 
     [HttpGet("{id:guid}/entries")]
-    public async Task<IActionResult> GetEntries(Guid id, CancellationToken ct)
+    public async Task<IActionResult> GetEntries(
+        Guid id,
+        [FromQuery(Name = "blocks")] List<string>? blocks,
+        CancellationToken ct)
     {
         try
         {
-            var result = await _parsingService.GetEntriesAsync(id, ct);
+            var result = await _parsingService.GetEntriesAsync(id, blocks, ct);
             return Ok(result);
         }
         catch (KeyNotFoundException)

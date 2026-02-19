@@ -37,6 +37,63 @@
   }
 }
 
+.teamcity-block-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--sharky-border-dim);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.teamcity-block-filter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teamcity-block-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teamcity-block-input {
+  min-height: 64px;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--sharky-border-dim);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+
+  &:focus {
+    outline: none;
+    border-color: rgba(0, 242, 255, 0.3);
+  }
+}
+
+.teamcity-block-apply {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--sharky-border-dim);
+  border-radius: 8px;
+  background: rgba(0, 242, 255, 0.08);
+  color: var(--accent-teal);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: rgba(0, 242, 255, 0.35);
+  }
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

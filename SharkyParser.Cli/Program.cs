@@ -47,7 +47,7 @@ public static class Program
         services.AddTransient<InstallationLogParser>();
         services.AddSingleton<UpdateLogParser>();
         services.AddSingleton<IISLogParser>();
-        services.AddSingleton<TeamCityLogParser>();
+        services.AddTransient<TeamCityLogParser>();
 
         // ── Core services ──────────────────────────────────────────────────────
         // ILogParserRegistry is registered as a factory so that EVERY ServiceProvider

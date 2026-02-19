@@ -6,6 +6,18 @@
     <div class="file-info font-mono">{{ fileName() }}</div>
   </header>
 
+  @if (isTeamCity()) {
+  <div class="teamcity-block-filter">
+    <div class="teamcity-block-filter-head">
+      <span class="teamcity-block-title">TeamCity blocks</span>
+      <button class="teamcity-block-apply" (click)="applyTeamCityBlocks()">Apply</button>
+    </div>
+    <textarea class="teamcity-block-input"
+      placeholder="Enter block names separated by comma or newline. Example: Test-BeforeUpdate, Update-App"
+      [ngModel]="teamCityBlocksInput()" (ngModelChange)="teamCityBlocksInput.set($event)"></textarea>
+  </div>
+  }
+
   @if (statistics(); as stats) {
   <div class="stats-grid">
     <button class="stat-card total" [class.active]="levelFilter() === 'ALL'" (click)="setLevelFilter('ALL')">
