@@ -14,5 +14,8 @@ public enum LogType
     RabbitMq = 2,
     
     [Description("IIS Logs")]
-    IIS = 3
+    IIS = 3,
+    
+    [Description("TeamCity Logs")]
+    TeamCity = 4
 }

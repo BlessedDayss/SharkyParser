@@ -32,6 +32,7 @@ builder.Services.AddSingleton<ILogger>(sp => sp.GetRequiredService<ApiLogger>())
 builder.Services.AddTransient<InstallationLogParser>();
 builder.Services.AddSingleton<UpdateLogParser>();
 builder.Services.AddSingleton<IISLogParser>();
+builder.Services.AddTransient<TeamCityLogParser>();
 
 // ILogParserRegistry registered as a factory so the registry is populated
 // correctly for any ServiceProvider that resolves it (including scoped ones).
@@ -41,6 +42,7 @@ builder.Services.AddSingleton<ILogParserRegistry>(sp =>
     registry.Register(LogType.Installation, () => sp.GetRequiredService<InstallationLogParser>());
     registry.Register(LogType.Update,       () => sp.GetRequiredService<UpdateLogParser>());
     registry.Register(LogType.IIS,          () => sp.GetRequiredService<IISLogParser>());
+    registry.Register(LogType.TeamCity,     () => sp.GetRequiredService<TeamCityLogParser>());
     return registry;
 });
 

@@ -33,7 +33,11 @@ public sealed class LogParsingService : ILogParsingService
         => _parserFactory.GetAvailableTypes().Select(DtoMapper.ToDto).ToList().AsReadOnly();
 
     public async Task<ParseResultDto> ParseFileAsync(
-        Stream fileStream, string fileName, LogType logType, CancellationToken ct = default)
+        Stream fileStream,
+        string fileName,
+        LogType logType,
+        IReadOnlyList<string>? blocks = null,
+        CancellationToken ct = default)
     {
         var tempPath = Path.Combine(Path.GetTempPath(), $"sharky_{Guid.NewGuid():N}.log");
 
@@ -48,6 +52,7 @@ public sealed class LogParsingService : ILogParsingService
             fileBytes = await File.ReadAllBytesAsync(tempPath, ct);
 
             var parser     = _parserFactory.CreateParser(logType);
+            ConfigureTeamCityBlocks(parser, blocks);
             var entries    = (await parser.ParseFileAsync(tempPath)).ToList();
             var columns    = parser.GetColumns();
             var statistics = _analyzer.GetStatistics(entries, logType);
@@ -85,7 +90,10 @@ public sealed class LogParsingService : ILogParsingService
         return records.Select(DtoMapper.ToDto);
     }
 
-    public async Task<ParseResultDto> GetEntriesAsync(Guid id, CancellationToken ct = default)
+    public async Task<ParseResultDto> GetEntriesAsync(
+        Guid id,
+        IReadOnlyList<string>? blocks = null,
+        CancellationToken ct = default)
     {
         var record = await _fileRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException($"File record {id} not found.");
@@ -99,6 +107,7 @@ public sealed class LogParsingService : ILogParsingService
             await File.WriteAllBytesAsync(tempPath, record.Content, ct);
 
             var parser     = _parserFactory.CreateParser(logType);
+            ConfigureTeamCityBlocks(parser, blocks);
             var entries    = (await parser.ParseFileAsync(tempPath)).ToList();
             var columns    = parser.GetColumns();
             var statistics = _analyzer.GetStatistics(entries, logType);
@@ -115,5 +124,11 @@ public sealed class LogParsingService : ILogParsingService
             if (File.Exists(tempPath))
                 try { File.Delete(tempPath); } catch { /* best-effort */ }
         }
+    }
+
+    private static void ConfigureTeamCityBlocks(ILogParser parser, IReadOnlyList<string>? blocks)
+    {
+        if (parser is ITeamCityBlockConfigurableParser teamCityConfigurable)
+            teamCityConfigurable.ConfigureBlocks(blocks);
     }
 }

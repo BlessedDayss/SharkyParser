@@ -17,7 +17,12 @@ public interface ILogParsingService
     /// <summary>
     /// Parses an uploaded log file, saves it to the database, and returns results.
     /// </summary>
-    Task<ParseResultDto> ParseFileAsync(Stream fileStream, string fileName, LogType logType, CancellationToken ct = default);
+    Task<ParseResultDto> ParseFileAsync(
+        Stream fileStream,
+        string fileName,
+        LogType logType,
+        IReadOnlyList<string>? blocks = null,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Returns recently processed files from the database (metadata only, no content).
@@ -27,5 +32,8 @@ public interface ILogParsingService
     /// <summary>
     /// Re-parses a previously uploaded file stored in the database and returns its log entries.
     /// </summary>
-    Task<ParseResultDto> GetEntriesAsync(Guid id, CancellationToken ct = default);
+    Task<ParseResultDto> GetEntriesAsync(
+        Guid id,
+        IReadOnlyList<string>? blocks = null,
+        CancellationToken ct = default);
 }

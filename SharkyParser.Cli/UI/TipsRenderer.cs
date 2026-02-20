@@ -15,7 +15,8 @@ public static class TipsRenderer
                 "  [yellow]installation[/]  Installation logs\n" +
                 "  [yellow]update[/]        Update logs\n" +
                 "  [yellow]rabbitmq[/]      RabbitMQ logs\n" +
-                "  [yellow]iis[/]           IIS server logs\n\n" +
+                "  [yellow]iis[/]           IIS server logs\n" +
+                "  [yellow]teamcity[/]      TeamCity build logs\n\n" +
                 "[bold cyan]Examples:[/]\n\n" +
                 "  [grey]parse mylog.log -t installation[/]\n" +
                 "  [grey]analyze server.log -t iis[/]\n" +
