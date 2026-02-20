@@ -172,6 +172,64 @@
 </div>
 }
 
+@if (showTeamCityBlockModal()) {
+<div class="teamcity-block-modal-overlay" (click)="parseTeamCityWithoutBlocks()"
+  (keydown.escape)="parseTeamCityWithoutBlocks()" tabindex="0">
+  <div class="teamcity-block-modal" (click)="$event.stopPropagation()">
+    <div class="teamcity-block-modal-header">
+      <h3>Select TeamCity Blocks</h3>
+      <button class="close-btn" (click)="parseTeamCityWithoutBlocks()">&times;</button>
+    </div>
+    <p class="teamcity-block-modal-hint">
+      Choose blocks to filter parsing. If nothing is selected, the full file will be parsed.
+    </p>
+
+    @if (teamCityBlockModalLoading()) {
+    <div class="teamcity-block-modal-loading">Scanning TeamCity file for blocks...</div>
+    } @else {
+    @if (teamCityBlockModalError()) {
+    <div class="teamcity-block-modal-error">{{ teamCityBlockModalError() }}</div>
+    }
+
+    @if (detectedTeamCityBlocks().length > 0) {
+    <input class="teamcity-block-modal-search" type="text" placeholder="Search block by name..."
+      [ngModel]="teamCityBlockSearch()" (ngModelChange)="teamCityBlockSearch.set($event)" />
+
+    <div class="teamcity-block-modal-tools">
+      <button class="teamcity-block-modal-tool" (click)="selectAllTeamCityBlocks()">Select all</button>
+      <button class="teamcity-block-modal-tool" (click)="clearSelectedTeamCityBlocks()">Clear</button>
+    </div>
+
+    <div class="teamcity-block-modal-list">
+      @for (block of filteredTeamCityBlocks(); track block) {
+      <label class="teamcity-block-modal-item">
+        <input type="checkbox" [checked]="selectedTeamCityBlocks().includes(block)"
+          (change)="onTeamCityBlockToggle(block, $event)" />
+        <span>{{ block }}</span>
+      </label>
+      }
+    </div>
+    @if (filteredTeamCityBlocks().length === 0) {
+    <div class="teamcity-block-modal-empty">
+      No blocks match "{{ teamCityBlockSearch() }}".
+    </div>
+    }
+    } @else {
+    <div class="teamcity-block-modal-empty">
+      No TeamCity blocks were detected in the scanned part of file.
+    </div>
+    }
+    }
+
+    <div class="teamcity-block-modal-actions">
+      <button class="teamcity-block-modal-skip" (click)="parseTeamCityWithoutBlocks()">Parse without filter</button>
+      <button class="teamcity-block-modal-apply" (click)="applySelectedTeamCityBlocks()"
+        [disabled]="teamCityBlockModalLoading()">Apply and parse</button>
+    </div>
+  </div>
+</div>
+}
+
 @if (showModal() && selectedEntry(); as entry) {
 <div class="modal-overlay" (click)="closeModal()" (keydown.escape)="closeModal()" tabindex="0">
   <div class="modal-content" (click)="$event.stopPropagation()">
